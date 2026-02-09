@@ -53,18 +53,6 @@ const dropdownMenus: NavDropdown[] = [
     },
 ];
 
-interface NavSimple {
-    label: string;
-    icon: string;
-    href: string;
-}
-
-const simpleLinks: NavSimple[] = [
-    { label: 'Pricing', icon: '📋', href: '/pricing' },
-    { label: 'Certification', icon: '📜', href: '/certification' },
-    { label: 'Blog', icon: '📝', href: '/blog' },
-];
-
 export function Navbar() {
     const [openDropdown, setOpenDropdown] = useState<string | null>(null);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -166,19 +154,6 @@ export function Navbar() {
                                     </div>
                                 )}
                             </div>
-                        ))}
-
-                        {/* Simple links */}
-                        {simpleLinks.map(link => (
-                            <Link
-                                key={link.href}
-                                to={link.href}
-                                className="nav-item"
-                                onClick={() => setMobileMenuOpen(false)}
-                            >
-                                <span className="nav-item-icon">{link.icon}</span>
-                                <span>{link.label}</span>
-                            </Link>
                         ))}
                     </div>
 
