@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts';
-import { AlertTriangle, XCircle, Info } from 'lucide-react';
+import { AlertTriangle, XCircle, Info, ArrowLeft } from 'lucide-react';
 import './AnalyzerDashboard.css';
 
 const MOCK_REPORT = {
@@ -31,6 +31,7 @@ const COLORS = ['#00C49F', '#FFBB28', '#FF8042', '#0088FE'];
 export function AnalyzerDashboard() {
     const [searchParams] = useSearchParams();
     const url = searchParams.get('url');
+    const navigate = useNavigate();
     const [report, setReport] = useState<typeof MOCK_REPORT | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -63,9 +64,15 @@ export function AnalyzerDashboard() {
         <div className="dashboard">
             <div className="container dashboard-container">
                 <div className="dashboard-header">
-                    <div>
-                        <h1 className="dashboard-title">Audit Report</h1>
-                        <p className="dashboard-url">{url}</p>
+                    <div className="dashboard-header-left">
+                        <button className="back-btn" onClick={() => navigate('/')}>
+                            <ArrowLeft size={18} />
+                            <span>Back</span>
+                        </button>
+                        <div>
+                            <h1 className="dashboard-title">Audit Report</h1>
+                            <p className="dashboard-url">{url}</p>
+                        </div>
                     </div>
                     <div className="dashboard-actions">
                         <button className="btn btn-outline">Download PDF</button>
