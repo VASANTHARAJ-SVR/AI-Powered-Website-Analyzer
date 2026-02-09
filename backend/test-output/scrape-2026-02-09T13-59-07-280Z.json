@@ -1,0 +1,124 @@
+{
+  "finalUrl": "https://example.com/",
+  "originalUrl": "https://example.com",
+  "httpStatus": 200,
+  "loadTimeMs": 3355,
+  "redirectChain": [],
+  "navigationError": null,
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+  "viewport": {
+    "width": 1200,
+    "height": 900
+  },
+  "timestamp": "2026-02-09T13:59:07.275Z",
+  "title": "Example Domain",
+  "html": "<HTML content: 528 chars>",
+  "screenshot_full": "<base64 data: 15576 chars>",
+  "screenshot_viewport": "<base64 data: 15576 chars>",
+  "performance": {
+    "lcp_ms": 2860,
+    "lcp_s": 2.86,
+    "cls": 0,
+    "fcp_ms": 2860,
+    "fcp_s": 2.86,
+    "ttfb_ms": 18,
+    "ttfb_s": 0.018,
+    "tbt_ms": 0,
+    "domContentLoaded_ms": 2849,
+    "pageLoad_ms": 2849,
+    "longTasks": [],
+    "layoutShifts": []
+  },
+  "resources": {
+    "all": [],
+    "total_count": 0,
+    "total_js_kb": 0,
+    "total_css_kb": 0,
+    "total_images_kb": 0,
+    "total_fonts_kb": 0,
+    "render_blocking_count": 0,
+    "render_blocking_resources": []
+  },
+  "seo": {
+    "title": "Example Domain",
+    "title_length": 14,
+    "meta_description": "",
+    "meta_description_length": 0,
+    "meta_keywords": "",
+    "canonical": null,
+    "robots_meta": null,
+    "viewport_meta": "width=device-width, initial-scale=1",
+    "h1s": [
+      "Example Domain"
+    ],
+    "h2s": [],
+    "heading_counts": {
+      "h1": 1,
+      "h2": 0,
+      "h3": 0,
+      "h4": 0,
+      "h5": 0,
+      "h6": 0
+    },
+    "images": [],
+    "images_missing_alt": [],
+    "images_missing_alt_count": 0,
+    "links": [
+      {
+        "href": "https://iana.org/domains/example",
+        "text": "Learn more",
+        "rel": null,
+        "target": null
+      }
+    ],
+    "links_count": 1,
+    "internal_links_count": 0,
+    "external_links_count": 1,
+    "open_graph": {
+      "title": null,
+      "description": null,
+      "image": null,
+      "url": null,
+      "type": null
+    },
+    "twitter_card": {
+      "card": null,
+      "title": null,
+      "description": null,
+      "image": null
+    },
+    "structured_data": []
+  },
+  "ux": {
+    "axe_results": {
+      "violations": [],
+      "passes": [],
+      "incomplete": []
+    },
+    "violations_count": 0,
+    "violations": [],
+    "ctas": [
+      {
+        "text": "Learn more",
+        "tagName": "a",
+        "top": 241.078125,
+        "left": 240,
+        "width": 80.125,
+        "height": 21,
+        "area": 1682.625,
+        "aboveFold": true,
+        "visible": true,
+        "backgroundColor": "rgba(0, 0, 0, 0)",
+        "color": "rgb(51, 68, 136)"
+      }
+    ],
+    "ctas_above_fold": 1,
+    "dom_node_count": 11,
+    "viewport_meta_present": true
+  },
+  "content": {
+    "visible_text": "Example Domain\n\nThis domain is for use in documentation examples without needing permission. Avoid use in operations.\n\nLearn more",
+    "word_count": 19,
+    "char_count": 129
+  }
+}

@@ -1,53 +1,90 @@
-// API service for backend communication
-// import axios from 'axios';
-// const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+import axios from 'axios';
 
-export interface ScanResult {
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+
+const api = axios.create({
+    baseURL: API_URL,
+    timeout: 120000, // 2 minutes for analysis
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
+
+export interface AnalyzeRequest {
     url: string;
-    scores: {
-        overall: number;
-        performance: number;
-        seo: number;
-        ux: number;
-        content: number;
-    };
-    metrics: Record<string, any>;
-    issues: Array<{
-        id: string;
-        type: 'error' | 'warning' | 'info';
-        module: string;
-        message: string;
-        impact: string;
-    }>;
+    emulateMobile?: boolean;
 }
 
-export const analyzeUrl = async (url: string): Promise<ScanResult> => {
-    // In a real scenario, this would POST to the backend
-    // const response = await axios.post(`${API_URL}/analyze`, { url });
-    // return response.data;
+export interface AnalyzeResponse {
+    success: boolean;
+    jobId: string;
+    reportId: string;
+    url: string;
+    final_url: string;
+    duration_ms: number;
+    website_health_score: number;
+    health_grade: string;
+    module_scores: {
+        performance: number;
+        ux: number;
+        seo: number;
+        content: number;
+    };
+    dominant_risk_domains: string[];
+    action_recommendation: string;
+}
 
-    // Mock response for now
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            resolve({
-                url,
-                scores: {
-                    overall: Math.floor(Math.random() * 30) + 70,
-                    performance: Math.floor(Math.random() * 30) + 70,
-                    seo: Math.floor(Math.random() * 30) + 70,
-                    ux: Math.floor(Math.random() * 30) + 70,
-                    content: Math.floor(Math.random() * 30) + 70,
-                },
-                metrics: {
-                    lcp: '2.4s',
-                    cls: '0.05',
-                },
-                issues: [
-                    { id: '1', type: 'error', module: 'SEO', message: 'Missing Meta Description', impact: 'High' },
-                    { id: '2', type: 'warning', module: 'Performance', message: 'Large Layout Shift', impact: 'Medium' },
-                    { id: '3', type: 'info', module: 'UX', message: 'Button contrast low', impact: 'Low' },
-                ]
-            });
-        }, 2000);
-    });
+export interface Report {
+    _id: string;
+    request_id: string;
+    url: string;
+    final_url: string;
+    status: string;
+    created_at: string;
+    finished_at: string;
+
+    modules: {
+        performance: any;
+        ux: any;
+        seo: any;
+        content: any;
+    };
+
+    aggregator: {
+        website_health_score: number;
+        health_grade: string;
+        dominant_risk_domains: string[];
+        fix_priority_order: any[];
+        overall_risk_level: string;
+        action_recommendation_flag: string;
+        module_scores: {
+            performance: number;
+            ux: number;
+            seo: number;
+            content: number;
+        };
+    };
+
+    raw_artifacts?: any;
+}
+
+// Analyze a website
+export const analyzeWebsite = async (data: AnalyzeRequest): Promise<AnalyzeResponse> => {
+    const response = await api.post('/api/analyze', data);
+    return response.data;
 };
+
+// Get report by ID
+export const getReport = async (reportId: string): Promise<Report> => {
+    const response = await api.get(`/api/reports/${reportId}`);
+    return response.data;
+};
+
+// Get job status
+export const getJobStatus = async (jobId: string) => {
+    const response = await api.get(`/api/job/${jobId}/status`);
+    return response.data;
+};
+
+export default api;
+

@@ -1,29 +1,78 @@
 const express = require('express');
 const cors = require('cors');
-const dotenv = require('dotenv');
-
-// Load environment variables
-dotenv.config();
+const connectDB = require('./db/connection');
+const analyzeRoutes = require('./routes/analyze');
+const reportsRoutes = require('./routes/reports');
+require('dotenv').config();
 
 const app = express();
-const port = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Request logging
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path}`);
+  next();
+});
 
 // Routes
+app.use('/api', analyzeRoutes);
+app.use('/api', reportsRoutes);
+
+// Root endpoint
 app.get('/', (req, res) => {
-  res.send('AI-Powered Website Analyzer API is running');
+  res.json({
+    message: 'WebAudit AI Backend',
+    version: '2.0.0',
+    endpoints: {
+      analyze: 'POST /api/analyze',
+      getReport: 'GET /api/reports/:id',
+      listReports: 'GET /api/reports',
+      health: 'GET /api/health'
+    }
+  });
 });
 
-// Import modules
-app.use('/api/seo', require('./modules/seo/routes'));
-app.use('/api/ux', require('./modules/ux/routes'));
-app.use('/api/performance', require('./modules/performance/routes'));
-app.use('/api/content', require('./modules/content/routes'));
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('❌ Error:', err);
+  res.status(500).json({
+    success: false,
+    error: 'Internal server error',
+    message: err.message
+  });
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    error: 'Route not found'
+  });
+});
 
 // Start server
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
+const startServer = async () => {
+  try {
+    // Connect to MongoDB
+    await connectDB();
+    
+    // Start Express server
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on http://localhost:${PORT}`);
+      console.log(`📊 API: http://localhost:${PORT}/api`);
+      console.log(`💚 Health: http://localhost:${PORT}/api/health`);
+    });
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+startServer();
+
+module.exports = app;
