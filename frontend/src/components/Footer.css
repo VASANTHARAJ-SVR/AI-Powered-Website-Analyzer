@@ -1,12 +1,12 @@
 .footer {
   margin-top: auto;
-  border-top: 1px solid var(--gray-200);
-  background-color: var(--white);
+  border-top: 1px solid #1e1e2e;
+  background-color: #0a0a0f;
   padding: 2rem 0;
 }
 
 .footer-content {
   text-align: center;
   font-size: 0.875rem;
-  color: var(--gray-500);
+  color: #5a5a6a;
 }

@@ -5,20 +5,26 @@ import { LandingPage } from './pages/LandingPage';
 import { AnalyzerDashboard } from './pages/AnalyzerDashboard';
 import './App.css';
 
+function AppLayout() {
+  return (
+    <div className="app">
+      <Navbar />
+      <main className="main-content">
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/analyze" element={<AnalyzerDashboard />} />
+          <Route path="*" element={<div className="not-found">Page Not Found</div>} />
+        </Routes>
+      </main>
+      <Footer />
+    </div>
+  );
+}
+
 function App() {
   return (
     <BrowserRouter>
-      <div className="app">
-        <Navbar />
-        <main className="main-content">
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/analyze" element={<AnalyzerDashboard />} />
-            <Route path="*" element={<div className="not-found">Page Not Found</div>} />
-          </Routes>
-        </main>
-        <Footer />
-      </div>
+      <AppLayout />
     </BrowserRouter>
   );
 }

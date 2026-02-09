@@ -25,7 +25,7 @@
 .dashboard-title {
   font-size: 1.875rem;
   font-weight: 700;
-  color: var(--gray-900);
+  color: #f0f0f5;
   margin-bottom: 0.25rem;
 }
 
@@ -58,18 +58,18 @@
 }
 
 .score-card {
-  background-color: var(--white);
+  background-color: #12121a;
   padding: 1.5rem;
   border-radius: 0.75rem;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-  border: 1px solid var(--gray-200);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
+  border: 1px solid #2a2a3a;
 }
 
 .score-title {
   font-size: 1.125rem;
   font-weight: 600;
   margin-bottom: 1rem;
-  color: var(--gray-900);
+  color: #f0f0f5;
 }
 
 .overall-score {
@@ -98,7 +98,7 @@
 .score-number {
   font-size: 2.5rem;
   font-weight: 700;
-  color: var(--gray-900);
+  color: #aee92b;
 }
 
 .score-label {
@@ -111,14 +111,14 @@
 }
 
 .issues-header {
-  border-bottom: 1px solid var(--gray-200);
+  border-bottom: 1px solid #2a2a3a;
   padding: 1.5rem;
 }
 
 .issues-title {
   font-size: 1.125rem;
   font-weight: 500;
-  color: var(--gray-900);
+  color: #f0f0f5;
 }
 
 .issues-list {
@@ -134,8 +134,8 @@
   gap: 1rem;
   padding: 1rem;
   border-radius: 0.5rem;
-  border: 1px solid var(--gray-200);
-  background-color: var(--gray-50);
+  border: 1px solid #2a2a3a;
+  background-color: #12121a;
 }
 
 .issue-icon {
@@ -163,7 +163,7 @@
 
 .issue-message {
   font-weight: 500;
-  color: var(--gray-900);
+  color: #f0f0f5;
   margin-bottom: 0.25rem;
 }
 
@@ -178,8 +178,9 @@
   font-size: 0.75rem;
   padding: 0.125rem 0.5rem;
   border-radius: 9999px;
-  background-color: var(--gray-200);
-  color: var(--gray-700);
+  background-color: #1a1a26;
+  color: #c0c0cc;
+  border: 1px solid #2a2a3a;
 }
 
 .issue-impact {
@@ -199,8 +200,8 @@
 .spinner {
   width: 3rem;
   height: 3rem;
-  border: 2px solid var(--gray-200);
-  border-top-color: var(--primary);
+  border: 2px solid #2a2a3a;
+  border-top-color: #aee92b;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
