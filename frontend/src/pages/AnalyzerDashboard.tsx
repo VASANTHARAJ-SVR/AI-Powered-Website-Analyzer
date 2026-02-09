@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useEffect, useState, useRef } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
     ArrowLeft, Globe, Zap, Search, Smartphone, FileText,
     TrendingUp, Shield, ChevronRight, Clock, Activity,
     Server, Tag, Layout, Image, Eye, Type, Gauge,
-    AlertTriangle, CheckCircle, XCircle, Info
+    AlertTriangle, CheckCircle, XCircle, Info, ArrowDown
 } from 'lucide-react';
 import { getReport, type Report } from '../services/api';
+import Loader from '../components/Loader';
 import './AnalyzerDashboard.css';
 
 // ─── Grade Table ───
@@ -64,6 +65,8 @@ export function AnalyzerDashboard() {
     const [report, setReport] = useState<Report | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [activeModule, setActiveModule] = useState<string>('Performance');
+    const viewBtnRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (!reportId) { setLoading(false); return; }
@@ -79,13 +82,17 @@ export function AnalyzerDashboard() {
         })();
     }, [reportId]);
 
+    // Auto-scroll to View Report button after 10 seconds
+    useEffect(() => {
+        if (!report) return;
+        const timer = setTimeout(() => {
+            viewBtnRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 10000);
+        return () => clearTimeout(timer);
+    }, [report]);
+
     if (loading) {
-        return (
-            <div className="loading-container">
-                <div className="spinner"></div>
-                <p>Loading report...</p>
-            </div>
-        );
+        return <Loader />;
     }
 
     if (error || !report) {
@@ -149,6 +156,20 @@ export function AnalyzerDashboard() {
     return (
         <div className="dashboard">
             <div className="container dashboard-container">
+                {/* ── Logo (top-right) ── */}
+                <Link to="/" className="dash-logo">
+                    <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
+                        <rect width="36" height="36" rx="8" fill="#aee92b"/>
+                        <path d="M10 26L18 10L26 26" stroke="#0a0a0f" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"/>
+                        <circle cx="18" cy="16.5" r="2.2" fill="#0a0a0f"/>
+                        <path d="M13 22H23" stroke="#0a0a0f" strokeWidth="2.2" strokeLinecap="round"/>
+                    </svg>
+                    <span className="dash-logo-text">
+                        <span className="dash-logo-ai">AI</span>
+                        <span className="dash-logo-name">Web Analyser</span>
+                    </span>
+                </Link>
+
                 {/* ── Header ── */}
                 <div className="dashboard-header">
                     <div className="dashboard-header-left">
@@ -207,8 +228,14 @@ export function AnalyzerDashboard() {
                         const grade = getGrade(module.value);
                         const meta = GRADE_TABLE.find((row) => row.grade === grade);
                         const modColor = MODULE_COLORS[module.name] || '#aee92b';
+                        const isActive = activeModule === module.name;
                         return (
-                            <div key={module.name} className="grade-module-card">
+                            <div
+                                key={module.name}
+                                className={`grade-module-card ${isActive ? 'module-active' : ''}`}
+                                style={isActive ? { borderColor: modColor, boxShadow: `0 0 20px ${modColor}15` } : undefined}
+                                onClick={() => setActiveModule(module.name)}
+                            >
                                 <div className="module-card-top">
                                     <div className="module-icon" style={{ backgroundColor: `${modColor}15`, color: modColor }}>
                                         {MODULE_ICONS[module.name]}
@@ -229,236 +256,164 @@ export function AnalyzerDashboard() {
                     })}
                 </div>
 
-                {/* ── PERFORMANCE: Core Web Vitals ── */}
-                {perf && (
-                    <>
-                        <div className="dash-section-header">
-                            <span className="dash-section-label">Performance</span>
-                            <h2 className="dash-section-title">Core Web <span className="accent">Vitals</span></h2>
-                            <p className="dash-section-subtitle">LCP, FID/TBT, CLS, TTFB — real metrics from your page</p>
-                        </div>
-                        <div className="metrics-grid">
-                            <MetricCard
-                                icon={<Clock size={20} />}
-                                label="LCP"
-                                sublabel="Largest Contentful Paint"
-                                value={formatMetric(perf.metrics?.lcp_s, 's')}
-                                color={getStatusColor(perf.metrics?.lcp_s ?? 0, 2.5, 4.0)}
-                            />
-                            <MetricCard
-                                icon={<Activity size={20} />}
-                                label="TBT"
-                                sublabel="Total Blocking Time (≈ FID)"
-                                value={formatMetric(perf.metrics?.tbt_ms, 'ms', 0)}
-                                color={getStatusColor(perf.metrics?.tbt_ms ?? 0, 200, 600)}
-                            />
-                            <MetricCard
-                                icon={<Gauge size={20} />}
-                                label="CLS"
-                                sublabel="Cumulative Layout Shift"
-                                value={formatMetric(perf.metrics?.cls, '', 3)}
-                                color={getStatusColor(perf.metrics?.cls ?? 0, 0.1, 0.25)}
-                            />
-                            <MetricCard
-                                icon={<Server size={20} />}
-                                label="TTFB"
-                                sublabel="Time to First Byte"
-                                value={formatMetric(perf.metrics?.ttfb_s, 's')}
-                                color={getStatusColor(perf.metrics?.ttfb_s ?? 0, 0.8, 1.8)}
-                            />
-                            <MetricCard
-                                icon={<Zap size={20} />}
-                                label="FCP"
-                                sublabel="First Contentful Paint"
-                                value={formatMetric(perf.metrics?.fcp_s, 's')}
-                                color={getStatusColor(perf.metrics?.fcp_s ?? 0, 1.8, 3.0)}
-                            />
-                            <MetricCard
-                                icon={<Tag size={20} />}
-                                label="JS Size"
-                                sublabel="Total JavaScript"
-                                value={formatMetric(perf.metrics?.total_js_kb, ' KB', 0)}
-                                color={getStatusColor(perf.metrics?.total_js_kb ?? 0, 200, 500)}
-                            />
-                            <MetricCard
-                                icon={<Layout size={20} />}
-                                label="CSS Size"
-                                sublabel="Total CSS"
-                                value={formatMetric(perf.metrics?.total_css_kb, ' KB', 0)}
-                                color={getStatusColor(perf.metrics?.total_css_kb ?? 0, 50, 150)}
-                            />
-                            <MetricCard
-                                icon={<Image size={20} />}
-                                label="Images"
-                                sublabel="Total Image Size"
-                                value={formatMetric(perf.metrics?.total_images_kb, ' KB', 0)}
-                                color={getStatusColor(perf.metrics?.total_images_kb ?? 0, 500, 2000)}
-                            />
-                        </div>
-                    </>
-                )}
+                {/* ── Module Detail Panel (tabbed) ── */}
+                <div className="module-detail-panel">
+                    {activeModule === 'Performance' && perf && (
+                        <>
+                            <div className="dash-section-header">
+                                <span className="dash-section-label" style={{ color: '#00C49F', borderColor: '#00C49F40', backgroundColor: '#00C49F12' }}>Performance</span>
+                                <h2 className="dash-section-title">Core Web <span className="accent">Vitals</span></h2>
+                                <p className="dash-section-subtitle">LCP, FID/TBT, CLS, TTFB — real metrics from your page</p>
+                            </div>
+                            <div className="metrics-grid">
+                                <MetricCard icon={<Clock size={20} />} label="LCP" sublabel="Largest Contentful Paint" value={formatMetric(perf.metrics?.lcp_s, 's')} color={getStatusColor(perf.metrics?.lcp_s ?? 0, 2.5, 4.0)} />
+                                <MetricCard icon={<Activity size={20} />} label="TBT" sublabel="Total Blocking Time (≈ FID)" value={formatMetric(perf.metrics?.tbt_ms, 'ms', 0)} color={getStatusColor(perf.metrics?.tbt_ms ?? 0, 200, 600)} />
+                                <MetricCard icon={<Gauge size={20} />} label="CLS" sublabel="Cumulative Layout Shift" value={formatMetric(perf.metrics?.cls, '', 3)} color={getStatusColor(perf.metrics?.cls ?? 0, 0.1, 0.25)} />
+                                <MetricCard icon={<Server size={20} />} label="TTFB" sublabel="Time to First Byte" value={formatMetric(perf.metrics?.ttfb_s, 's')} color={getStatusColor(perf.metrics?.ttfb_s ?? 0, 0.8, 1.8)} />
+                                <MetricCard icon={<Zap size={20} />} label="FCP" sublabel="First Contentful Paint" value={formatMetric(perf.metrics?.fcp_s, 's')} color={getStatusColor(perf.metrics?.fcp_s ?? 0, 1.8, 3.0)} />
+                                <MetricCard icon={<Tag size={20} />} label="JS Size" sublabel="Total JavaScript" value={formatMetric(perf.metrics?.total_js_kb, ' KB', 0)} color={getStatusColor(perf.metrics?.total_js_kb ?? 0, 200, 500)} />
+                                <MetricCard icon={<Layout size={20} />} label="CSS Size" sublabel="Total CSS" value={formatMetric(perf.metrics?.total_css_kb, ' KB', 0)} color={getStatusColor(perf.metrics?.total_css_kb ?? 0, 50, 150)} />
+                                <MetricCard icon={<Image size={20} />} label="Images" sublabel="Total Image Size" value={formatMetric(perf.metrics?.total_images_kb, ' KB', 0)} color={getStatusColor(perf.metrics?.total_images_kb ?? 0, 500, 2000)} />
+                            </div>
+                        </>
+                    )}
 
-                {/* ── SEO: Meta, Headings, Schema, OG ── */}
-                {seo && (
-                    <>
-                        <div className="dash-section-header">
-                            <span className="dash-section-label">SEO</span>
-                            <h2 className="dash-section-title">Search Engine <span className="accent">Optimization</span></h2>
-                            <p className="dash-section-subtitle">Meta tags, heading structure, schema markup, and Open Graph data</p>
-                        </div>
-                        <div className="detail-cards-grid">
-                            <DetailCard title="Meta Tags" icon={<Tag size={18} />} color="#6366F1" items={[
-                                { label: 'Title Length', value: `${seo.title_length ?? 'N/A'} chars`, status: seo.title_length >= 30 && seo.title_length <= 60 ? 'good' : 'bad' },
-                                { label: 'Meta Description', value: `${seo.meta_description_length ?? 'N/A'} chars`, status: seo.meta_description_length >= 120 && seo.meta_description_length <= 160 ? 'good' : 'bad' },
-                                { label: 'Indexability', value: seo.indexability_status || 'N/A', status: seo.indexability_status === 'good' ? 'good' : 'bad' },
-                            ]} />
-                            <DetailCard title="Headings" icon={<Type size={18} />} color="#6366F1" items={[
-                                { label: 'H1 Count', value: `${seo.h1_count ?? 'N/A'}`, status: seo.h1_count === 1 ? 'good' : 'bad' },
-                                { label: 'Images Missing Alt', value: `${seo.images_missing_alt_count ?? 0}`, status: (seo.images_missing_alt_count ?? 0) === 0 ? 'good' : 'warn' },
-                            ]} />
-                            <DetailCard title="Schema & Structured Data" icon={<Layout size={18} />} color="#6366F1" items={[
-                                { label: 'Crawl Health', value: seo.crawl_health_indicator || 'N/A', status: seo.crawl_health_indicator === 'low' ? 'good' : 'bad' },
-                                { label: 'SEO Risks', value: seo.primary_seo_risks?.length ? seo.primary_seo_risks.join(', ') : 'None', status: (seo.primary_seo_risks?.length ?? 0) === 0 ? 'good' : 'warn' },
-                            ]} />
-                            <DetailCard title="Links" icon={<Globe size={18} />} color="#6366F1" items={[
-                                { label: 'Internal Links', value: `${seo.internal_links_count ?? 'N/A'}`, status: (seo.internal_links_count ?? 0) >= 5 ? 'good' : 'warn' },
-                                { label: 'External Links', value: `${seo.external_links_count ?? 'N/A'}`, status: 'neutral' },
-                            ]} />
-                        </div>
-                    </>
-                )}
+                    {activeModule === 'SEO' && seo && (
+                        <>
+                            <div className="dash-section-header">
+                                <span className="dash-section-label" style={{ color: '#6366F1', borderColor: '#6366F140', backgroundColor: '#6366F112' }}>SEO</span>
+                                <h2 className="dash-section-title">Search Engine <span className="accent">Optimization</span></h2>
+                                <p className="dash-section-subtitle">Meta tags, heading structure, schema markup, and Open Graph data</p>
+                            </div>
+                            <div className="detail-cards-grid">
+                                <DetailCard title="Meta Tags" icon={<Tag size={18} />} color="#6366F1" items={[
+                                    { label: 'Title Length', value: `${seo.title_length ?? 'N/A'} chars`, status: seo.title_length >= 30 && seo.title_length <= 60 ? 'good' : 'bad' },
+                                    { label: 'Meta Description', value: `${seo.meta_description_length ?? 'N/A'} chars`, status: seo.meta_description_length >= 120 && seo.meta_description_length <= 160 ? 'good' : 'bad' },
+                                    { label: 'Indexability', value: seo.indexability_status || 'N/A', status: seo.indexability_status === 'good' ? 'good' : 'bad' },
+                                ]} />
+                                <DetailCard title="Headings" icon={<Type size={18} />} color="#6366F1" items={[
+                                    { label: 'H1 Count', value: `${seo.h1_count ?? 'N/A'}`, status: seo.h1_count === 1 ? 'good' : 'bad' },
+                                    { label: 'Images Missing Alt', value: `${seo.images_missing_alt_count ?? 0}`, status: (seo.images_missing_alt_count ?? 0) === 0 ? 'good' : 'warn' },
+                                ]} />
+                                <DetailCard title="Schema & Structured Data" icon={<Layout size={18} />} color="#6366F1" items={[
+                                    { label: 'Crawl Health', value: seo.crawl_health_indicator || 'N/A', status: seo.crawl_health_indicator === 'low' ? 'good' : 'bad' },
+                                    { label: 'SEO Risks', value: seo.primary_seo_risks?.length ? seo.primary_seo_risks.join(', ') : 'None', status: (seo.primary_seo_risks?.length ?? 0) === 0 ? 'good' : 'warn' },
+                                ]} />
+                                <DetailCard title="Links" icon={<Globe size={18} />} color="#6366F1" items={[
+                                    { label: 'Internal Links', value: `${seo.internal_links_count ?? 'N/A'}`, status: (seo.internal_links_count ?? 0) >= 5 ? 'good' : 'warn' },
+                                    { label: 'External Links', value: `${seo.external_links_count ?? 'N/A'}`, status: 'neutral' },
+                                ]} />
+                            </div>
+                        </>
+                    )}
 
-                {/* ── UX: Viewport, Touch, A11y, Layout ── */}
-                {ux && (
-                    <>
-                        <div className="dash-section-header">
-                            <span className="dash-section-label">UX & Accessibility</span>
-                            <h2 className="dash-section-title">User <span className="accent">Experience</span></h2>
-                            <p className="dash-section-subtitle">Mobile viewport, touch targets, accessibility, and layout analysis</p>
-                        </div>
-                        <div className="detail-cards-grid">
-                            <DetailCard title="Mobile / Viewport" icon={<Smartphone size={18} />} color="#F59E0B" items={[
-                                { label: 'Viewport Meta', value: ux.viewport_meta_present !== undefined ? (ux.viewport_meta_present ? 'Present' : 'Missing') : 'N/A', status: ux.viewport_meta_present ? 'good' : 'bad' },
-                                { label: 'CTAs Above Fold', value: `${ux.ctas_above_fold ?? 'N/A'}`, status: (ux.ctas_above_fold ?? 0) >= 1 ? 'good' : 'warn' },
-                            ]} />
-                            <DetailCard title="Touch & CTAs" icon={<Eye size={18} />} color="#F59E0B" items={[
-                                { label: 'Total CTAs', value: `${ux.ctas_count ?? 'N/A'}`, status: 'neutral' },
-                                { label: 'Friction Sources', value: ux.primary_friction_sources?.length ? ux.primary_friction_sources.join(', ') : 'None', status: (ux.primary_friction_sources?.length ?? 0) === 0 ? 'good' : 'warn' },
-                            ]} />
-                            <DetailCard title="Accessibility (A11y)" icon={<Shield size={18} />} color="#F59E0B" items={[
-                                { label: 'A11y Risk Level', value: ux.accessibility_risk_level || 'N/A', status: ux.accessibility_risk_level === 'low' ? 'good' : ux.accessibility_risk_level === 'medium' ? 'warn' : 'bad' },
-                                { label: 'Total Violations', value: `${ux.violations_count ?? 0}`, status: (ux.violations_count ?? 0) === 0 ? 'good' : 'bad' },
-                                { label: 'Critical', value: `${ux.violations_by_impact?.critical ?? 0}`, status: (ux.violations_by_impact?.critical ?? 0) === 0 ? 'good' : 'bad' },
-                                { label: 'Serious', value: `${ux.violations_by_impact?.serious ?? 0}`, status: (ux.violations_by_impact?.serious ?? 0) === 0 ? 'good' : 'warn' },
-                            ]} />
-                            <DetailCard title="Layout & Trust" icon={<Layout size={18} />} color="#F59E0B" items={[
-                                { label: 'Trust Impact', value: ux.trust_impact_indicator || 'N/A', status: ux.trust_impact_indicator === 'low' ? 'good' : 'warn' },
-                                { label: 'Recommendation', value: ux.recommendation_flag?.replace(/_/g, ' ') || 'N/A', status: 'neutral' },
-                            ]} />
-                        </div>
-                    </>
-                )}
+                    {activeModule === 'UX' && ux && (
+                        <>
+                            <div className="dash-section-header">
+                                <span className="dash-section-label" style={{ color: '#F59E0B', borderColor: '#F59E0B40', backgroundColor: '#F59E0B12' }}>UX & Accessibility</span>
+                                <h2 className="dash-section-title">User <span className="accent">Experience</span></h2>
+                                <p className="dash-section-subtitle">Mobile viewport, touch targets, accessibility, and layout analysis</p>
+                            </div>
+                            <div className="detail-cards-grid">
+                                <DetailCard title="Mobile / Viewport" icon={<Smartphone size={18} />} color="#F59E0B" items={[
+                                    { label: 'Viewport Meta', value: ux.viewport_meta_present !== undefined ? (ux.viewport_meta_present ? 'Present' : 'Missing') : 'N/A', status: ux.viewport_meta_present ? 'good' : 'bad' },
+                                    { label: 'CTAs Above Fold', value: `${ux.ctas_above_fold ?? 'N/A'}`, status: (ux.ctas_above_fold ?? 0) >= 1 ? 'good' : 'warn' },
+                                ]} />
+                                <DetailCard title="Touch & CTAs" icon={<Eye size={18} />} color="#F59E0B" items={[
+                                    { label: 'Total CTAs', value: `${ux.ctas_count ?? 'N/A'}`, status: 'neutral' },
+                                    { label: 'Friction Sources', value: ux.primary_friction_sources?.length ? ux.primary_friction_sources.join(', ') : 'None', status: (ux.primary_friction_sources?.length ?? 0) === 0 ? 'good' : 'warn' },
+                                ]} />
+                                <DetailCard title="Accessibility (A11y)" icon={<Shield size={18} />} color="#F59E0B" items={[
+                                    { label: 'A11y Risk Level', value: ux.accessibility_risk_level || 'N/A', status: ux.accessibility_risk_level === 'low' ? 'good' : ux.accessibility_risk_level === 'medium' ? 'warn' : 'bad' },
+                                    { label: 'Total Violations', value: `${ux.violations_count ?? 0}`, status: (ux.violations_count ?? 0) === 0 ? 'good' : 'bad' },
+                                    { label: 'Critical', value: `${ux.violations_by_impact?.critical ?? 0}`, status: (ux.violations_by_impact?.critical ?? 0) === 0 ? 'good' : 'bad' },
+                                    { label: 'Serious', value: `${ux.violations_by_impact?.serious ?? 0}`, status: (ux.violations_by_impact?.serious ?? 0) === 0 ? 'good' : 'warn' },
+                                ]} />
+                                <DetailCard title="Layout & Trust" icon={<Layout size={18} />} color="#F59E0B" items={[
+                                    { label: 'Trust Impact', value: ux.trust_impact_indicator || 'N/A', status: ux.trust_impact_indicator === 'low' ? 'good' : 'warn' },
+                                    { label: 'Recommendation', value: ux.recommendation_flag?.replace(/_/g, ' ') || 'N/A', status: 'neutral' },
+                                ]} />
+                            </div>
+                        </>
+                    )}
 
-                {/* ── Content: Readability, Depth, Quality, Structure ── */}
-                {content && (
-                    <>
-                        <div className="dash-section-header">
-                            <span className="dash-section-label">Content</span>
-                            <h2 className="dash-section-title">Content <span className="accent">Quality</span></h2>
-                            <p className="dash-section-subtitle">Readability, depth, keyword diversity, and content structure</p>
-                        </div>
-                        <div className="detail-cards-grid">
-                            <DetailCard title="Readability" icon={<FileText size={18} />} color="#EC4899" items={[
-                                { label: 'Flesch Reading Ease', value: content.flesch_reading_ease != null ? content.flesch_reading_ease.toFixed(1) : 'N/A', status: (content.flesch_reading_ease ?? 0) >= 60 ? 'good' : (content.flesch_reading_ease ?? 0) >= 40 ? 'warn' : 'bad' },
-                                { label: 'Grade Level', value: content.flesch_kincaid_grade != null ? content.flesch_kincaid_grade.toFixed(1) : 'N/A', status: 'neutral' },
-                            ]} />
-                            <DetailCard title="Depth" icon={<Layout size={18} />} color="#EC4899" items={[
-                                { label: 'Word Count', value: `${content.word_count ?? 'N/A'}`, status: (content.word_count ?? 0) >= 300 ? 'good' : 'bad' },
-                                { label: 'Content Depth', value: content.content_depth_status?.replace(/_/g, ' ') || 'N/A', status: content.content_depth_status === 'comprehensive' ? 'good' : content.content_depth_status === 'adequate' ? 'warn' : 'bad' },
-                            ]} />
-                            <DetailCard title="Keywords & Quality" icon={<Tag size={18} />} color="#EC4899" items={[
-                                { label: 'Keywords Found', value: `${content.keywords?.length ?? 0}`, status: (content.keywords?.length ?? 0) >= 5 ? 'good' : 'warn' },
-                                { label: 'Top Keywords', value: content.keywords?.slice(0, 5).map((k: any) => typeof k === 'string' ? k : k.word || k.term || k).join(', ') || 'None', status: 'neutral' },
-                            ]} />
-                            <DetailCard title="Structure" icon={<Type size={18} />} color="#EC4899" items={[
-                                { label: 'Intent Match', value: content.intent_match_level?.replace(/_/g, ' ') || 'N/A', status: content.intent_match_level === 'high' ? 'good' : content.intent_match_level === 'medium' ? 'warn' : 'bad' },
-                                { label: 'Content Gaps', value: content.primary_content_gaps?.length ? content.primary_content_gaps.join(', ') : 'None', status: (content.primary_content_gaps?.length ?? 0) === 0 ? 'good' : 'warn' },
-                            ]} />
-                        </div>
-                    </>
-                )}
+                    {activeModule === 'Content' && content && (
+                        <>
+                            <div className="dash-section-header">
+                                <span className="dash-section-label" style={{ color: '#EC4899', borderColor: '#EC489940', backgroundColor: '#EC489912' }}>Content</span>
+                                <h2 className="dash-section-title">Content <span className="accent">Quality</span></h2>
+                                <p className="dash-section-subtitle">Readability, depth, keyword diversity, and content structure</p>
+                            </div>
+                            <div className="detail-cards-grid">
+                                <DetailCard title="Readability" icon={<FileText size={18} />} color="#EC4899" items={[
+                                    { label: 'Flesch Reading Ease', value: content.flesch_reading_ease != null ? content.flesch_reading_ease.toFixed(1) : 'N/A', status: (content.flesch_reading_ease ?? 0) >= 60 ? 'good' : (content.flesch_reading_ease ?? 0) >= 40 ? 'warn' : 'bad' },
+                                    { label: 'Grade Level', value: content.flesch_kincaid_grade != null ? content.flesch_kincaid_grade.toFixed(1) : 'N/A', status: 'neutral' },
+                                ]} />
+                                <DetailCard title="Depth" icon={<Layout size={18} />} color="#EC4899" items={[
+                                    { label: 'Word Count', value: `${content.word_count ?? 'N/A'}`, status: (content.word_count ?? 0) >= 300 ? 'good' : 'bad' },
+                                    { label: 'Content Depth', value: content.content_depth_status?.replace(/_/g, ' ') || 'N/A', status: content.content_depth_status === 'comprehensive' ? 'good' : content.content_depth_status === 'adequate' ? 'warn' : 'bad' },
+                                ]} />
+                                <DetailCard title="Keywords & Quality" icon={<Tag size={18} />} color="#EC4899" items={[
+                                    { label: 'Keywords Found', value: `${content.keywords?.length ?? 0}`, status: (content.keywords?.length ?? 0) >= 5 ? 'good' : 'warn' },
+                                    { label: 'Top Keywords', value: content.keywords?.slice(0, 5).map((k: any) => typeof k === 'string' ? k : k.word || k.term || k).join(', ') || 'None', status: 'neutral' },
+                                ]} />
+                                <DetailCard title="Structure" icon={<Type size={18} />} color="#EC4899" items={[
+                                    { label: 'Intent Match', value: content.intent_match_level?.replace(/_/g, ' ') || 'N/A', status: content.intent_match_level === 'high' ? 'good' : content.intent_match_level === 'medium' ? 'warn' : 'bad' },
+                                    { label: 'Content Gaps', value: content.primary_content_gaps?.length ? content.primary_content_gaps.join(', ') : 'None', status: (content.primary_content_gaps?.length ?? 0) === 0 ? 'good' : 'warn' },
+                                ]} />
+                            </div>
+                        </>
+                    )}
 
-                {/* ── Issues & Fixes ── */}
-                {allIssues.length > 0 && (
-                    <>
-                        <div className="dash-section-header">
-                            <span className="dash-section-label">Issues Found</span>
-                            <h2 className="dash-section-title">Detected <span className="accent">Issues</span></h2>
-                            <p className="dash-section-subtitle">{allIssues.length} issues detected across all modules</p>
-                        </div>
-                        <div className="issues-table-wrapper">
-                            <table className="grade-table">
-                                <thead>
-                                    <tr>
-                                        <th>Severity</th>
-                                        <th>Module</th>
-                                        <th className="th-desc">Description</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {allIssues.slice(0, 15).map((issue: any, idx: number) => (
-                                        <tr key={idx}>
-                                            <td><SeverityBadge severity={issue.severity} /></td>
-                                            <td style={{ color: MODULE_COLORS[issue.module] || '#aee92b', fontWeight: 600, fontSize: '0.82rem' }}>{issue.module}</td>
-                                            <td className="grade-desc">{issue.description}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </>
-                )}
-
-                {/* ── Priority Fixes ── */}
-                {allFixes.length > 0 && (
-                    <>
-                        <div className="dash-section-header">
-                            <span className="dash-section-label">Action Plan</span>
-                            <h2 className="dash-section-title">Priority <span className="accent">Fixes</span></h2>
-                            <p className="dash-section-subtitle">Top recommended fixes sorted by impact</p>
-                        </div>
-                        <div className="issues-table-wrapper">
-                            <table className="grade-table">
-                                <thead>
-                                    <tr>
-                                        <th>Priority</th>
-                                        <th>Module</th>
-                                        <th>Fix</th>
-                                        <th className="th-desc">Details</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {allFixes.slice(0, 10).map((fix: any, idx: number) => (
-                                        <tr key={idx}>
-                                            <td>
-                                                <span className="grade-badge" style={{
-                                                    backgroundColor: fix.priority === 1 ? 'rgba(239,68,68,0.12)' : fix.priority === 2 ? 'rgba(249,115,22,0.12)' : 'rgba(245,158,11,0.12)',
-                                                    color: fix.priority === 1 ? '#EF4444' : fix.priority === 2 ? '#F97316' : '#F59E0B',
-                                                    borderColor: fix.priority === 1 ? '#EF444440' : fix.priority === 2 ? '#F9731640' : '#F59E0B40',
-                                                }}>
-                                                    P{fix.priority}
-                                                </span>
-                                            </td>
-                                            <td style={{ color: MODULE_COLORS[fix.module] || '#aee92b', fontWeight: 600, fontSize: '0.82rem' }}>{fix.module}</td>
-                                            <td style={{ color: '#e0e0ea', fontWeight: 600, fontSize: '0.84rem' }}>{fix.title}</td>
-                                            <td className="grade-desc">{fix.description}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </>
-                )}
+                    {/* Module-specific issues & fixes */}
+                    {(() => {
+                        const modIssues = allIssues.filter((i: any) => i.module === activeModule);
+                        const modFixes = allFixes.filter((f: any) => f.module === activeModule);
+                        return (
+                            <>
+                                {modIssues.length > 0 && (
+                                    <div className="issues-table-wrapper" style={{ marginTop: '1.5rem' }}>
+                                        <h3 className="module-sub-heading">{activeModule} Issues <span className="issue-count">{modIssues.length}</span></h3>
+                                        <table className="grade-table">
+                                            <thead><tr><th>Severity</th><th className="th-desc">Description</th></tr></thead>
+                                            <tbody>
+                                                {modIssues.map((issue: any, idx: number) => (
+                                                    <tr key={idx}>
+                                                        <td><SeverityBadge severity={issue.severity} /></td>
+                                                        <td className="grade-desc">{issue.description}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                                {modFixes.length > 0 && (
+                                    <div className="issues-table-wrapper" style={{ marginTop: '1rem' }}>
+                                        <h3 className="module-sub-heading">Recommended Fixes</h3>
+                                        <table className="grade-table">
+                                            <thead><tr><th>Priority</th><th>Fix</th><th className="th-desc">Details</th></tr></thead>
+                                            <tbody>
+                                                {modFixes.map((fix: any, idx: number) => (
+                                                    <tr key={idx}>
+                                                        <td>
+                                                            <span className="grade-badge" style={{
+                                                                backgroundColor: fix.priority === 1 ? 'rgba(239,68,68,0.12)' : fix.priority === 2 ? 'rgba(249,115,22,0.12)' : 'rgba(245,158,11,0.12)',
+                                                                color: fix.priority === 1 ? '#EF4444' : fix.priority === 2 ? '#F97316' : '#F59E0B',
+                                                                borderColor: fix.priority === 1 ? '#EF444440' : fix.priority === 2 ? '#F9731640' : '#F59E0B40',
+                                                            }}>P{fix.priority}</span>
+                                                        </td>
+                                                        <td style={{ color: '#e0e0ea', fontWeight: 600, fontSize: '0.84rem' }}>{fix.title}</td>
+                                                        <td className="grade-desc">{fix.description}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                            </>
+                        );
+                    })()}
+                </div>
 
                 {/* ── Grade Scale Table ── */}
                 <div className="dash-section-header">
@@ -502,11 +457,16 @@ export function AnalyzerDashboard() {
                     </table>
                 </div>
 
-                {/* ── Report Metadata ── */}
-                <div className="report-meta-bar">
-                    <span>Report ID: <code>{report._id}</code></span>
-                    <span>Status: <strong>{report.status}</strong></span>
-                    <span>Created: {new Date(report.created_at).toLocaleString()}</span>
+
+
+                {/* ── View Report Button ── */}
+                <div className="view-report-cta" ref={viewBtnRef}>
+                    <div className="view-report-glow" />
+                    <p className="view-report-label">Want a printable summary of this audit?</p>
+                    <button className="view-report-btn" onClick={() => window.print()}>
+                        <span>View Report</span>
+                        <ArrowDown size={20} />
+                    </button>
                 </div>
             </div>
         </div>

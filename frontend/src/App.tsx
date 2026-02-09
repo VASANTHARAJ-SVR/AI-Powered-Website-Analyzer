@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { LandingPage } from './pages/LandingPage';
@@ -6,7 +6,21 @@ import AnalyzerRedirect from './pages/AnalyzerRedirect';
 import { AnalyzerDashboard } from './pages/AnalyzerDashboard';
 import './App.css';
 
+const FULLSCREEN_ROUTES = ['/analyze', '/dashboard'];
+
 function AppLayout() {
+  const location = useLocation();
+  const isFullscreen = FULLSCREEN_ROUTES.some((r) => location.pathname.startsWith(r));
+
+  if (isFullscreen) {
+    return (
+      <Routes>
+        <Route path="/analyze" element={<AnalyzerRedirect />} />
+        <Route path="/dashboard/:reportId" element={<AnalyzerDashboard />} />
+      </Routes>
+    );
+  }
+
   return (
     <div className="app">
       <Navbar />

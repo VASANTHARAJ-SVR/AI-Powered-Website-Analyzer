@@ -1,5 +1,8 @@
-import { useState, useEffect } from 'react';
-import { Search, Zap, Globe, Shield, Eye, Activity, Code, Scan, Wifi, Database } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import {
+    Search, Zap, Globe, Shield, Eye, Activity, Code, Scan, Wifi, Database,
+    CheckCircle, BarChart3, Gauge, Smartphone, FileText
+} from 'lucide-react';
 import './Loader.css';
 
 const crawlSteps = [
@@ -15,34 +18,60 @@ const crawlSteps = [
     { msg: "Generating AI insights", detail: "Scoring & recommendation engine", icon: Database },
 ];
 
+const moduleCards = [
+    { label: "Performance", icon: Gauge, color: "#00C49F", activateAt: 2 },
+    { label: "SEO", icon: Search, color: "#6366F1", activateAt: 4 },
+    { label: "UX", icon: Smartphone, color: "#F59E0B", activateAt: 6 },
+    { label: "Content", icon: FileText, color: "#EC4899", activateAt: 8 },
+];
+
 const TOTAL_STEPS = crawlSteps.length;
 
 export default function Loader() {
     const [stepIndex, setStepIndex] = useState(0);
     const [dots, setDots] = useState('');
     const [progress, setProgress] = useState(0);
+    const [completedSteps, setCompletedSteps] = useState<number[]>([]);
+    const [dataPoints, setDataPoints] = useState(0);
+    const logRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const stepInterval = setInterval(() => {
             setStepIndex((prev) => {
                 const next = (prev + 1) % TOTAL_STEPS;
                 setProgress(((next + 1) / TOTAL_STEPS) * 100);
+                setCompletedSteps((cs) => {
+                    if (!cs.includes(prev)) return [...cs, prev];
+                    return cs;
+                });
                 return next;
             });
-        }, 1200);
+        }, 1400);
 
         const dotsInterval = setInterval(() => {
             setDots((prev) => (prev.length >= 3 ? '' : prev + '.'));
         }, 400);
 
-        // Kickstart progress
+        // Tick up fake data points
+        const dataInterval = setInterval(() => {
+            setDataPoints((p) => p + Math.floor(Math.random() * 12 + 3));
+        }, 300);
+
         setProgress((1 / TOTAL_STEPS) * 100);
 
         return () => {
             clearInterval(stepInterval);
             clearInterval(dotsInterval);
+            clearInterval(dataInterval);
         };
     }, []);
+
+    // Auto-scroll log
+    useEffect(() => {
+        if (logRef.current) {
+            logRef.current.scrollTop = logRef.current.scrollHeight;
+        }
+    }, [completedSteps, stepIndex]);
 
     const step = crawlSteps[stepIndex];
     const CurrentIcon = step.icon;
@@ -56,6 +85,12 @@ export default function Loader() {
                     <div className="scan-line scan-line-1"></div>
                     <div className="scan-line scan-line-2"></div>
                     <div className="scan-line scan-line-3"></div>
+                </div>
+                {/* Data streams */}
+                <div className="data-streams">
+                    {[...Array(6)].map((_, i) => (
+                        <div key={i} className={`data-stream stream-${i + 1}`} />
+                    ))}
                 </div>
             </div>
 
@@ -79,7 +114,7 @@ export default function Loader() {
                     <div className="scanner-core">
                         <div className="scanner-beam"></div>
                         <div className="icon-container">
-                            <CurrentIcon size={26} className="scanner-icon" />
+                            <CurrentIcon size={28} className="scanner-icon" />
                         </div>
                     </div>
 
@@ -96,38 +131,83 @@ export default function Loader() {
                     Deep Analysis in Progress
                 </div>
 
-                {/* Status */}
-                <div className="status-section">
-                    <div className="status-message" key={stepIndex}>
-                        {step.msg}
+                {/* Glitch title */}
+                <h2 className="crawler-title" data-text={step.msg}>
+                    {step.msg}
+                </h2>
+                <span className="status-message-accent">{step.detail}</span>
+
+                {/* Module preview cards */}
+                <div className="module-previews">
+                    {moduleCards.map((mod) => {
+                        const Icon = mod.icon;
+                        const active = completedSteps.length >= mod.activateAt;
+                        return (
+                            <div
+                                key={mod.label}
+                                className={`module-preview-card ${active ? 'active' : ''}`}
+                                style={{ '--mod-color': mod.color } as React.CSSProperties}
+                            >
+                                <Icon size={16} />
+                                <span>{mod.label}</span>
+                                {active && <CheckCircle size={12} className="mod-check" />}
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* Progress Bar */}
+                <div className="progress-bar-wrap">
+                    <div className="progress-bar-fill" style={{ width: `${progress}%` }}>
+                        <div className="progress-bar-shine" />
                     </div>
-                    <span className="status-message-accent">{step.detail}</span>
+                </div>
 
-                    {/* Progress Bar */}
-                    <div className="progress-bar-wrap">
-                        <div className="progress-bar-fill" style={{ width: `${progress}%` }} />
+                {/* Stats row */}
+                <div className="stats-row">
+                    <div className="stat-chip">
+                        <BarChart3 size={13} />
+                        <span>{dataPoints} data points</span>
+                    </div>
+                    <div className="stat-chip">
+                        <Activity size={13} />
+                        <span>{completedSteps.length}/{TOTAL_STEPS} checks</span>
+                    </div>
+                </div>
+
+                {/* Terminal log */}
+                <div className="terminal-log" ref={logRef}>
+                    {completedSteps.map((idx) => (
+                        <div key={idx} className="log-line done">
+                            <CheckCircle size={11} />
+                            <span>{crawlSteps[idx].msg}</span>
+                        </div>
+                    ))}
+                    <div className="log-line current">
+                        <span className="log-cursor">▸</span>
+                        <span>{step.msg}{dots}</span>
+                    </div>
+                </div>
+
+                {/* Step pips + dots */}
+                <div className="progress-indicators">
+                    <div className="step-indicators">
+                        {crawlSteps.map((_, i) => (
+                            <div
+                                key={i}
+                                className={`step-pip ${i === stepIndex ? 'active' : completedSteps.includes(i) ? 'done' : ''}`}
+                            />
+                        ))}
                     </div>
 
-                    <div className="progress-indicators">
-                        {/* Step pips */}
-                        <div className="step-indicators">
-                            {crawlSteps.map((_, i) => (
-                                <div
-                                    key={i}
-                                    className={`step-pip ${i === stepIndex ? 'active' : i < stepIndex ? 'done' : ''}`}
-                                />
-                            ))}
-                        </div>
+                    <div className="pulse-dots">
+                        {[...Array(5)].map((_, i) => (
+                            <div key={i} className={`pulse-dot pulse-dot-${i + 1}`}></div>
+                        ))}
+                    </div>
 
-                        <div className="pulse-dots">
-                            {[...Array(5)].map((_, i) => (
-                                <div key={i} className={`pulse-dot pulse-dot-${i + 1}`}></div>
-                            ))}
-                        </div>
-
-                        <div className="crawl-progress">
-                            <span className="progress-text">Crawling{dots}</span>
-                        </div>
+                    <div className="crawl-progress">
+                        <span className="progress-text">Crawling{dots}</span>
                     </div>
                 </div>
 

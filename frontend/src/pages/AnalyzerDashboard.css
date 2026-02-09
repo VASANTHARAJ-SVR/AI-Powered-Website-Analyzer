@@ -2,10 +2,53 @@
 .dashboard {
   padding: 2rem 0 4rem;
   min-height: calc(100vh - 4rem);
+  position: relative;
 }
 
 .dashboard-container {
   max-width: 72rem;
+}
+
+/* === Dashboard Logo (top-right) === */
+.dash-logo {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  z-index: 10;
+  opacity: 0.85;
+  transition: opacity 0.2s ease;
+}
+
+.dash-logo:hover {
+  opacity: 1;
+}
+
+.dash-logo-text {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.dash-logo-ai {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #aee92b;
+  background: rgba(174, 233, 43, 0.1);
+  border: 1px solid rgba(174, 233, 43, 0.25);
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.3rem;
+  letter-spacing: 0.06em;
+}
+
+.dash-logo-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #e0e0ea;
+  letter-spacing: -0.01em;
 }
 
 /* === Header === */
@@ -297,12 +340,144 @@
   flex-direction: column;
   gap: 0.65rem;
   transition: all 0.25s ease;
+  cursor: pointer;
+  position: relative;
 }
 
 .grade-module-card:hover {
   border-color: #3a3a4a;
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.grade-module-card.module-active {
+  border-width: 2px;
+  transform: translateY(-3px);
+  background-color: #14141e;
+}
+
+.grade-module-card.module-active::after {
+  content: '';
+  position: absolute;
+  bottom: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid currentColor;
+  opacity: 0.5;
+}
+
+/* ── Module Detail Panel ── */
+.module-detail-panel {
+  margin-top: 1rem;
+  padding: 1.5rem;
+  background: #0e0e16;
+  border: 1px solid #1e1e2a;
+  border-radius: 1rem;
+  animation: panelSlideIn 0.35s ease;
+}
+
+@keyframes panelSlideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.module-sub-heading {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #e0e0ea;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ── View Report CTA ── */
+.view-report-cta {
+    margin: 3rem 0 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 3rem 1.5rem;
+    position: relative;
+    border: 1px solid #1e1e2a;
+    border-radius: 1rem;
+    background: linear-gradient(180deg, rgba(174, 233, 43, 0.02) 0%, transparent 100%);
+}
+
+.view-report-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 320px;
+    height: 140px;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(ellipse, rgba(174, 233, 43, 0.08) 0%, transparent 70%);
+    pointer-events: none;
+    filter: blur(25px);
+}
+
+.view-report-label {
+    font-size: 0.88rem;
+    color: #8a8a9a;
+    text-align: center;
+    letter-spacing: 0.02em;
+}
+
+.view-report-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.85rem 2.4rem;
+    border: 2px solid #aee92b;
+    border-radius: 0.75rem;
+    background: rgba(174, 233, 43, 0.06);
+    color: #aee92b;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
+    transition: all 0.25s ease;
+    font-family: 'Inter', system-ui, sans-serif;
+    animation: btnPulse 2s ease-in-out infinite;
+}
+
+.view-report-btn:hover {
+    background: #aee92b;
+    color: #0a0a0f;
+    box-shadow: 0 0 30px rgba(174, 233, 43, 0.3), 0 4px 16px rgba(174, 233, 43, 0.2);
+    transform: translateY(-2px);
+    animation: none;
+}
+
+.view-report-btn:active {
+    transform: translateY(0);
+}
+
+@keyframes btnPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(174, 233, 43, 0.15); }
+    50%      { box-shadow: 0 0 20px 4px rgba(174, 233, 43, 0.15); }
+}
+
+.issue-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.45rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: rgba(239, 68, 68, 0.12);
+  color: #EF4444;
+  border: 1px solid #EF444430;
 }
 
 .module-card-top {
