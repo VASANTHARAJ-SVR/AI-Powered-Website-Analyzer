@@ -867,3 +867,187 @@
   color: #10B981;
   text-transform: capitalize;
 }
+
+/* === AI Strategic Analysis Section === */
+.ai-insights-section {
+  margin-bottom: 4rem;
+  animation: fadeIn 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ai-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .ai-grid {
+    grid-template-columns: repeat(3, 1fr);
+    align-items: start;
+  }
+  
+  .ai-summary-card {
+    grid-column: span 1;
+  }
+  
+  .ai-priority-card {
+    grid-column: span 2;
+  }
+  
+  .ai-dual-col {
+    grid-column: span 3;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+}
+
+.ai-card {
+  background: #12121a;
+  border: 1px solid #2a2a3a;
+  border-radius: 1rem;
+  padding: 1.75rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.ai-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #8b5cf6, transparent);
+  opacity: 0.5;
+}
+
+.ai-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.ai-icon {
+  color: #8b5cf6;
+}
+
+.ai-card-header h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #f0f0f5;
+  margin: 0;
+}
+
+.ai-text {
+  color: #a0a0b0;
+  line-height: 1.7;
+  font-size: 0.95rem;
+}
+
+/* Priority Card */
+.ai-list-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.ai-priority-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid #2a2a3a;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  transition: all 0.2s ease;
+}
+
+.ai-priority-item:hover {
+  background: rgba(139, 92, 246, 0.05);
+  border-color: rgba(139, 92, 246, 0.3);
+}
+
+.ai-priority-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ai-priority-title {
+  font-weight: 700;
+  color: #e0e0ea;
+  font-size: 0.95rem;
+}
+
+.ai-badges {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.ai-badge {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.ai-badge.high {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.ai-badge.medium {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.ai-badge.roi {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.ai-priority-desc {
+  font-size: 0.85rem;
+  color: #8a8a9a;
+  line-height: 1.5;
+}
+
+/* Lists */
+.ai-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ai-list li {
+  position: relative;
+  padding-left: 1.5rem;
+  color: #a0a0b0;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.ai-list li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: #8b5cf6;
+  font-weight: bold;
+  font-size: 1.2rem;
+  line-height: 1;
+  top: -2px;
+}

@@ -26,7 +26,12 @@ const WEIGHTS = {
  * @returns {Object} Aggregated result
  */
 function aggregate(modules) {
-  const { performance, ux, seo, content } = modules;
+  const { 
+    performance = { score: 0 }, 
+    ux = { score: 0 }, 
+    seo = { score: 0 }, 
+    content = { score: 0 } 
+  } = modules || {};
 
   // ============================================
   // Step 1: Convert scores to penalties

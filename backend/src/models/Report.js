@@ -180,6 +180,14 @@ const ReportSchema = new mongoose.Schema({
     action_recommendation_flag: String,
     confidence_overall: Number
   },
+
+  // AI Insights
+  ai_insights: {
+    executiveSummary: String,
+    topPriorities: [mongoose.Schema.Types.Mixed],
+    quickWins: [String],
+    longTermGoals: [String]
+  },
   
   // Warnings and Errors
   warnings: [String],

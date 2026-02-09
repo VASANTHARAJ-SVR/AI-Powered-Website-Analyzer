@@ -4,7 +4,8 @@ import {
     ArrowLeft, Globe, Zap, Search, Smartphone, FileText,
     TrendingUp, Shield, ChevronRight, Clock, Activity,
     Server, Tag, Layout, Image, Eye, Type, Gauge,
-    AlertTriangle, CheckCircle, XCircle, Info, ArrowDown
+    AlertTriangle, CheckCircle, XCircle, Info, ArrowDown,
+    Brain, Target, Compass
 } from 'lucide-react';
 import { getReport, type Report } from '../services/api';
 import Loader from '../components/Loader';
@@ -159,10 +160,10 @@ export function AnalyzerDashboard() {
                 {/* ── Logo (top-right) ── */}
                 <Link to="/" className="dash-logo">
                     <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
-                        <rect width="36" height="36" rx="8" fill="#aee92b"/>
-                        <path d="M10 26L18 10L26 26" stroke="#0a0a0f" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"/>
-                        <circle cx="18" cy="16.5" r="2.2" fill="#0a0a0f"/>
-                        <path d="M13 22H23" stroke="#0a0a0f" strokeWidth="2.2" strokeLinecap="round"/>
+                        <rect width="36" height="36" rx="8" fill="#aee92b" />
+                        <path d="M10 26L18 10L26 26" stroke="#0a0a0f" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
+                        <circle cx="18" cy="16.5" r="2.2" fill="#0a0a0f" />
+                        <path d="M13 22H23" stroke="#0a0a0f" strokeWidth="2.2" strokeLinecap="round" />
                     </svg>
                     <span className="dash-logo-text">
                         <span className="dash-logo-ai">AI</span>
@@ -216,6 +217,76 @@ export function AnalyzerDashboard() {
                         <p className="grade-hero-desc">{overallMeta?.desc}</p>
                     </div>
                 </div>
+
+                {/* ── AI Strategic Analysis ── */}
+                {report.ai_insights && (
+                    <div className="ai-insights-section">
+                        <div className="dash-section-header">
+                            <span className="dash-section-label" style={{ color: '#8b5cf6', borderColor: '#8b5cf640', backgroundColor: '#8b5cf612' }}>AI Powerhouse</span>
+                            <h2 className="dash-section-title">Strategic <span className="accent" style={{ color: '#8b5cf6' }}>Analysis</span></h2>
+                            <p className="dash-section-subtitle">AI-generated roadmap for maximum impact and ROI</p>
+                        </div>
+
+                        <div className="ai-grid">
+                            {/* Executive Summary */}
+                            <div className="ai-card ai-summary-card">
+                                <div className="ai-card-header">
+                                    <Brain size={24} className="ai-icon" />
+                                    <h3>Executive Summary</h3>
+                                </div>
+                                <p className="ai-text">{report.ai_insights.executiveSummary}</p>
+                            </div>
+
+                            {/* Top Priorities */}
+                            <div className="ai-card ai-priority-card">
+                                <div className="ai-card-header">
+                                    <Target size={24} className="ai-icon" />
+                                    <h3>Top Priorities</h3>
+                                </div>
+                                <div className="ai-list-wrapper">
+                                    {report.ai_insights.topPriorities?.map((p, i) => (
+                                        <div key={i} className="ai-priority-item">
+                                            <div className="ai-priority-header">
+                                                <span className="ai-priority-title">{p.title}</span>
+                                                <div className="ai-badges">
+                                                    <span className={`ai-badge ${p.impact.toLowerCase()}`}>{p.impact} Impact</span>
+                                                    <span className="ai-badge roi">ROI: {p.estimatedROI}</span>
+                                                </div>
+                                            </div>
+                                            <p className="ai-priority-desc">{p.description}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Quick Wins & Long Term */}
+                            <div className="ai-dual-col">
+                                <div className="ai-card">
+                                    <div className="ai-card-header">
+                                        <Zap size={24} className="ai-icon" />
+                                        <h3>Quick Wins</h3>
+                                    </div>
+                                    <ul className="ai-list">
+                                        {report.ai_insights.quickWins?.map((w, i) => (
+                                            <li key={i}>{w}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                                <div className="ai-card">
+                                    <div className="ai-card-header">
+                                        <Compass size={24} className="ai-icon" />
+                                        <h3>Long Term Goals</h3>
+                                    </div>
+                                    <ul className="ai-list">
+                                        {report.ai_insights.longTermGoals?.map((g, i) => (
+                                            <li key={i}>{g}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* ── Module Score Cards ── */}
                 <div className="dash-section-header">
