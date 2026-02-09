@@ -8,7 +8,7 @@ const performanceModule = require('./modules/performanceModule');
 const uxModule = require('./modules/uxModule');
 const seoModule = require('./modules/seoModule');
 const contentModule = require('./modules/contentModule');
-const { aggregate } = require('../aggregator/aggregator');
+const { smartAggregate } = require('../aggregator/smartAggregator');
 const Report = require('../models/Report');
 const { v4: uuidv4 } = require('uuid');
 
@@ -52,17 +52,30 @@ async function runAnalysisJob(url, options = {}, progressCallback = null) {
       contentModule.analyze(artifact)
     ]);
 
-    updateProgress('running', 70, 'Module analysis completed, aggregating results...');
+    updateProgress('running', 70, 'Module analysis completed, generating AI insights...');
 
     // ============================================
-    // Step 3: Aggregate results
+    // Step 3: API Aggregation & AI Insights
     // ============================================
-    const aggregatorResult = aggregate({
-      performance: performanceResult,
-      ux: uxResult,
-      seo: seoResult,
-      content: contentResult
+    console.log('[JobRunner] Module results:', { 
+        perf: !!performanceResult, 
+        ux: !!uxResult, 
+        seo: !!seoResult, 
+        content: !!contentResult 
     });
+
+    let smartResult;
+    try {
+      smartResult = await smartAggregate({
+        performance: performanceResult,
+        ux: uxResult,
+        seo: seoResult,
+        content: contentResult
+      });
+    } catch (aggError) {
+      console.error('[JobRunner] Smart Aggregation failed:', aggError);
+      throw aggError;
+    }
 
     updateProgress('running', 85, 'Saving report to database...');
 
@@ -79,9 +92,9 @@ async function runAnalysisJob(url, options = {}, progressCallback = null) {
       
       // Raw artifacts
       raw_artifacts: {
-        html: artifact.html,
-        screenshot_full_base64: artifact.screenshot_full,
-        screenshot_viewport_base64: artifact.screenshot_viewport,
+        html: null, // artifact.html (Saving space),
+        screenshot_full_base64: null, // artifact.screenshot_full (Saving space),
+        screenshot_viewport_base64: null, // artifact.screenshot_viewport (Saving space),
         resources: artifact.resources.all,
         redirect_chain: artifact.redirectChain,
         
@@ -100,7 +113,8 @@ async function runAnalysisJob(url, options = {}, progressCallback = null) {
       },
       
       // Aggregated results
-      aggregator: aggregatorResult,
+      aggregator: smartResult.aggregator,
+      ai_insights: smartResult.aiInsights,
       
       // Metadata
       user_agent: artifact.userAgent,
@@ -129,11 +143,12 @@ async function runAnalysisJob(url, options = {}, progressCallback = null) {
       url,
       final_url: artifact.finalUrl,
       duration_ms: duration,
-      website_health_score: aggregatorResult.website_health_score,
-      health_grade: aggregatorResult.health_grade,
-      module_scores: aggregatorResult.module_scores,
-      dominant_risk_domains: aggregatorResult.dominant_risk_domains,
-      action_recommendation: aggregatorResult.action_recommendation_flag,
+      website_health_score: smartResult.aggregator.website_health_score,
+      health_grade: smartResult.aggregator.health_grade,
+      module_scores: smartResult.aggregator.module_scores,
+      dominant_risk_domains: smartResult.aggregator.dominant_risk_domains,
+      action_recommendation: smartResult.aggregator.action_recommendation_flag,
+      ai_insights: smartResult.aiInsights,
       report
     };
 

@@ -65,12 +65,24 @@ export interface Report {
         };
     };
 
+    ai_insights?: {
+        executiveSummary: string;
+        topPriorities: Array<{ title: string; impact: string; description: string; estimatedROI: string }>;
+        quickWins: string[];
+        longTermGoals: string[];
+    };
     raw_artifacts?: any;
 }
 
 // Analyze a website
 export const analyzeWebsite = async (data: AnalyzeRequest): Promise<AnalyzeResponse> => {
     const response = await api.post('/api/analyze', data);
+    return response.data;
+};
+
+// Analyze specific module
+export const analyzeModule = async (moduleName: string, data: AnalyzeRequest): Promise<AnalyzeResponse> => {
+    const response = await api.post(`/api/analyze/${moduleName.toLowerCase()}`, data);
     return response.data;
 };
 
