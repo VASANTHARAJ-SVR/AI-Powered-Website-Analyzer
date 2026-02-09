@@ -10,7 +10,7 @@ router.post('/analyze', async (req, res) => {
   try {
     const { url, emulateMobile = false } = req.body;
     if (!url) return res.status(400).json({ success: false, error: 'URL is required' });
-    try { new URL(url); } catch (err) { return res.status(400).json({ success: false, error: 'Invalid URL format' }); }
+  try { new URL(url); } catch (err) { return res.status(400).json({ success: false, error: 'Invalid URL format' }); }
 
     console.log(`[API] Starting full analysis for: ${url} (mobile=${emulateMobile})`);
     const result = await runAnalysisJob(url, { emulateMobile });
