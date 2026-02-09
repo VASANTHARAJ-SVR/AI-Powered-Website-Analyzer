@@ -8,7 +8,8 @@ const performanceModule = require('./modules/performanceModule');
 const uxModule = require('./modules/uxModule');
 const seoModule = require('./modules/seoModule');
 const contentModule = require('./modules/contentModule');
-const { aggregate } = require('../aggregator/aggregator');
+const { smartAggregate } = require('../aggregator/smartAggregator');
+const { enhanceModulesWithAI } = require('./ai/moduleEnhancer');
 const Report = require('../models/Report');
 const { v4: uuidv4 } = require('uuid');
 
@@ -45,29 +46,62 @@ async function runAnalysisJob(url, options = {}, progressCallback = null) {
     // ============================================
     // Step 2: Run all modules in parallel
     // ============================================
+    const isMobile = options.emulateMobile || false;
+
     const [performanceResult, uxResult, seoResult, contentResult] = await Promise.all([
-      performanceModule.analyze(artifact),
-      uxModule.analyze(artifact),
+      performanceModule.analyze(artifact, { url, emulateMobile: isMobile }),
+      uxModule.analyze(artifact, isMobile),
       seoModule.analyze(artifact),
       contentModule.analyze(artifact)
     ]);
 
-    updateProgress('running', 70, 'Module analysis completed, aggregating results...');
+    updateProgress('running', 60, 'Module analysis completed, running AI enhancement...');
 
     // ============================================
-    // Step 3: Aggregate results
+    // Step 3: AI-Enhanced Module Analysis
     // ============================================
-    const aggregatorResult = aggregate({
-      performance: performanceResult,
-      ux: uxResult,
-      seo: seoResult,
-      content: contentResult
+    console.log('[JobRunner] Module results:', {
+      perf: !!performanceResult,
+      ux: !!uxResult,
+      seo: !!seoResult,
+      content: !!contentResult
     });
 
-    updateProgress('running', 85, 'Saving report to database...');
+    let enhanced;
+    try {
+      enhanced = await enhanceModulesWithAI({
+        performance: performanceResult,
+        ux: uxResult,
+        seo: seoResult,
+        content: contentResult
+      });
+    } catch (aiError) {
+      console.error('[JobRunner] AI module enhancement failed, using rule-based results:', aiError.message);
+      enhanced = { performance: performanceResult, ux: uxResult, seo: seoResult, content: contentResult };
+    }
+
+    updateProgress('running', 75, 'Generating strategic AI insights...');
 
     // ============================================
-    // Step 4: Save to MongoDB
+    // Step 4: API Aggregation & AI Insights
+    // ============================================
+    let smartResult;
+    try {
+      smartResult = await smartAggregate({
+        performance: enhanced.performance,
+        ux: enhanced.ux,
+        seo: enhanced.seo,
+        content: enhanced.content
+      });
+    } catch (aggError) {
+      console.error('[JobRunner] Smart Aggregation failed:', aggError);
+      throw aggError;
+    }
+
+    updateProgress('running', 88, 'Saving report to database...');
+
+    // ============================================
+    // Step 5: Save to MongoDB
     // ============================================
     const report = new Report({
       request_id: jobId,
@@ -76,39 +110,40 @@ async function runAnalysisJob(url, options = {}, progressCallback = null) {
       status: 'completed',
       created_at: new Date(startTime),
       finished_at: new Date(),
-      
+
       // Raw artifacts
       raw_artifacts: {
-        html: artifact.html,
-        screenshot_full_base64: artifact.screenshot_full,
-        screenshot_viewport_base64: artifact.screenshot_viewport,
+        html: null, // artifact.html (Saving space),
+        screenshot_full_base64: null, // artifact.screenshot_full (Saving space),
+        screenshot_viewport_base64: null, // artifact.screenshot_viewport (Saving space),
         resources: artifact.resources.all,
         redirect_chain: artifact.redirectChain,
-        
+
         performance_raw: artifact.performance,
         axe_results: artifact.ux.axe_results,
         seo_raw: artifact.seo,
         content_raw: artifact.content
       },
-      
-      // Module results
+
+      // Module results (AI-enhanced)
       modules: {
-        performance: performanceResult,
-        ux: uxResult,
-        seo: seoResult,
-        content: contentResult
+        performance: enhanced.performance,
+        ux: enhanced.ux,
+        seo: enhanced.seo,
+        content: enhanced.content
       },
-      
+
       // Aggregated results
-      aggregator: aggregatorResult,
-      
+      aggregator: smartResult.aggregator,
+      ai_insights: smartResult.aiInsights,
+
       // Metadata
       user_agent: artifact.userAgent,
       viewport: artifact.viewport,
       emulate_mobile: options.emulateMobile || false,
       load_time_ms: artifact.loadTimeMs,
       http_status: artifact.httpStatus,
-      
+
       warnings: [],
       errors: []
     });
@@ -129,11 +164,12 @@ async function runAnalysisJob(url, options = {}, progressCallback = null) {
       url,
       final_url: artifact.finalUrl,
       duration_ms: duration,
-      website_health_score: aggregatorResult.website_health_score,
-      health_grade: aggregatorResult.health_grade,
-      module_scores: aggregatorResult.module_scores,
-      dominant_risk_domains: aggregatorResult.dominant_risk_domains,
-      action_recommendation: aggregatorResult.action_recommendation_flag,
+      website_health_score: smartResult.aggregator.website_health_score,
+      health_grade: smartResult.aggregator.health_grade,
+      module_scores: smartResult.aggregator.module_scores,
+      dominant_risk_domains: smartResult.aggregator.dominant_risk_domains,
+      action_recommendation: smartResult.aggregator.action_recommendation_flag,
+      ai_insights: smartResult.aiInsights,
       report
     };
 
@@ -169,14 +205,15 @@ async function runAnalysisJob(url, options = {}, progressCallback = null) {
  */
 async function runPartialAnalysis(url, moduleNames, options = {}) {
   const artifact = await combinedScrape(url, options);
+  const isMobile = options.emulateMobile || false;
 
   const results = {};
 
   if (moduleNames.includes('performance')) {
-    results.performance = await performanceModule.analyze(artifact);
+    results.performance = await performanceModule.analyze(artifact, { url, emulateMobile: isMobile });
   }
   if (moduleNames.includes('ux')) {
-    results.ux = await uxModule.analyze(artifact);
+    results.ux = await uxModule.analyze(artifact, isMobile);
   }
   if (moduleNames.includes('seo')) {
     results.seo = await seoModule.analyze(artifact);

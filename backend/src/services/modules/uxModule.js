@@ -25,32 +25,50 @@ function penaltyFromMetric(value, good, bad) {
 const THRESHOLDS = {
   VIOLATIONS_CRITICAL_GOOD: 0,
   VIOLATIONS_CRITICAL_BAD: 3,
-  
+
   VIOLATIONS_SERIOUS_GOOD: 0,
   VIOLATIONS_SERIOUS_BAD: 5,
-  
+
   VIOLATIONS_MODERATE_GOOD: 0,
   VIOLATIONS_MODERATE_BAD: 10,
-  
+
   CTA_ABOVE_FOLD_MIN: 1,
   DOM_NODES_GOOD: 800,
   DOM_NODES_BAD: 1500
 };
 
 /**
+ * Mobile-specific UX thresholds (more lenient DOM, stricter touch/viewport)
+ */
+const MOBILE_THRESHOLDS = {
+  ...THRESHOLDS,
+  DOM_NODES_GOOD: 1200,
+  DOM_NODES_BAD: 2500,
+  TOUCH_TARGETS_TOO_SMALL_GOOD: 0,
+  TOUCH_TARGETS_TOO_SMALL_BAD: 10,
+  TEXT_TOO_SMALL_GOOD: 0,
+  TEXT_TOO_SMALL_BAD: 8,
+};
+
+/**
  * Calculate UX score
  * @param {Object} data - UX data from artifact
+ * @param {boolean} isMobile - Whether this is a mobile scan
  * @returns {Object} UX analysis result
  */
-function calculateUXScore(data) {
+function calculateUXScore(data, isMobile = false) {
   const {
     violations = [],
     violations_count = 0,
     ctas = [],
     ctas_above_fold = 0,
     dom_node_count = 0,
-    viewport_meta_present = false
+    viewport_meta_present = false,
+    touch_targets = null,
+    text_size_issues = null,
   } = data;
+
+  const T = isMobile ? MOBILE_THRESHOLDS : THRESHOLDS;
 
   // Group violations by impact
   const violationsByImpact = {
@@ -70,8 +88,8 @@ function calculateUXScore(data) {
   // Critical violations (highest weight)
   const critical_penalty = penaltyFromMetric(
     violationsByImpact.critical,
-    THRESHOLDS.VIOLATIONS_CRITICAL_GOOD,
-    THRESHOLDS.VIOLATIONS_CRITICAL_BAD
+    T.VIOLATIONS_CRITICAL_GOOD,
+    T.VIOLATIONS_CRITICAL_BAD
   );
   ACCESSIBILITY_penalty += 0.5 * critical_penalty;
   if (critical_penalty > 0) {
@@ -85,8 +103,8 @@ function calculateUXScore(data) {
   // Serious violations
   const serious_penalty = penaltyFromMetric(
     violationsByImpact.serious,
-    THRESHOLDS.VIOLATIONS_SERIOUS_GOOD,
-    THRESHOLDS.VIOLATIONS_SERIOUS_BAD
+    T.VIOLATIONS_SERIOUS_GOOD,
+    T.VIOLATIONS_SERIOUS_BAD
   );
   ACCESSIBILITY_penalty += 0.3 * serious_penalty;
   if (serious_penalty > 0) {
@@ -100,8 +118,8 @@ function calculateUXScore(data) {
   // Moderate violations
   const moderate_penalty = penaltyFromMetric(
     violationsByImpact.moderate,
-    THRESHOLDS.VIOLATIONS_MODERATE_GOOD,
-    THRESHOLDS.VIOLATIONS_MODERATE_BAD
+    T.VIOLATIONS_MODERATE_GOOD,
+    T.VIOLATIONS_MODERATE_BAD
   );
   ACCESSIBILITY_penalty += 0.2 * moderate_penalty;
   if (moderate_penalty > 0) {
@@ -118,7 +136,7 @@ function calculateUXScore(data) {
   let USABILITY_penalty = 0;
 
   // CTA above fold check
-  if (ctas_above_fold < THRESHOLDS.CTA_ABOVE_FOLD_MIN) {
+  if (ctas_above_fold < T.CTA_ABOVE_FOLD_MIN) {
     USABILITY_penalty += 0.4;
     factors.push({
       factor: 'No CTA Above Fold',
@@ -129,19 +147,19 @@ function calculateUXScore(data) {
 
   // Viewport meta check (mobile-friendly)
   if (!viewport_meta_present) {
-    USABILITY_penalty += 0.3;
+    USABILITY_penalty += isMobile ? 0.5 : 0.3; // Stricter for mobile
     factors.push({
       factor: 'Missing Viewport Meta',
       value: 0,
-      penalty: 0.3
+      penalty: isMobile ? 0.5 : 0.3
     });
   }
 
   // DOM complexity
   const dom_penalty = penaltyFromMetric(
     dom_node_count,
-    THRESHOLDS.DOM_NODES_GOOD,
-    THRESHOLDS.DOM_NODES_BAD
+    T.DOM_NODES_GOOD,
+    T.DOM_NODES_BAD
   );
   USABILITY_penalty += 0.3 * dom_penalty;
   if (dom_penalty > 0.3) {
@@ -158,7 +176,7 @@ function calculateUXScore(data) {
   let TRUST_penalty = 0;
 
   // Missing alt text on images (from violations)
-  const altViolations = violations.filter(v => 
+  const altViolations = violations.filter(v =>
     v.id === 'image-alt' || v.id === 'image-redundant-alt'
   );
   if (altViolations.length > 0) {
@@ -172,12 +190,63 @@ function calculateUXScore(data) {
   }
 
   // ============================================
+  // MOBILE-SPECIFIC Component (extra penalty for mobile scans)
+  // ============================================
+  let MOBILE_penalty = 0;
+
+  if (isMobile) {
+    // Touch target size penalty
+    if (touch_targets && touch_targets.too_small_count > 0) {
+      const touch_penalty = penaltyFromMetric(
+        touch_targets.too_small_count,
+        MOBILE_THRESHOLDS.TOUCH_TARGETS_TOO_SMALL_GOOD,
+        MOBILE_THRESHOLDS.TOUCH_TARGETS_TOO_SMALL_BAD
+      );
+      MOBILE_penalty += 0.5 * touch_penalty;
+      if (touch_penalty > 0) {
+        factors.push({
+          factor: 'Touch Targets Too Small',
+          value: touch_targets.too_small_count,
+          penalty: touch_penalty
+        });
+      }
+    }
+
+    // Text too small penalty
+    if (text_size_issues && text_size_issues.too_small_text_count > 0) {
+      const text_penalty = penaltyFromMetric(
+        text_size_issues.too_small_text_count,
+        MOBILE_THRESHOLDS.TEXT_TOO_SMALL_GOOD,
+        MOBILE_THRESHOLDS.TEXT_TOO_SMALL_BAD
+      );
+      MOBILE_penalty += 0.5 * text_penalty;
+      if (text_penalty > 0) {
+        factors.push({
+          factor: 'Text Too Small for Mobile',
+          value: text_size_issues.too_small_text_count,
+          penalty: text_penalty
+        });
+      }
+    }
+  }
+
+  // ============================================
   // Combine penalties
   // ============================================
-  let RAW_PENALTY =
-    0.50 * ACCESSIBILITY_penalty +
-    0.30 * USABILITY_penalty +
-    0.20 * TRUST_penalty;
+  let RAW_PENALTY;
+  if (isMobile) {
+    // Mobile: Accessibility 40%, Usability 25%, Trust 15%, Mobile-specific 20%
+    RAW_PENALTY =
+      0.40 * ACCESSIBILITY_penalty +
+      0.25 * USABILITY_penalty +
+      0.15 * TRUST_penalty +
+      0.20 * MOBILE_penalty;
+  } else {
+    RAW_PENALTY =
+      0.50 * ACCESSIBILITY_penalty +
+      0.30 * USABILITY_penalty +
+      0.20 * TRUST_penalty;
+  }
 
   RAW_PENALTY = clamp(RAW_PENALTY, 0, 1);
 
@@ -228,11 +297,11 @@ function calculateUXScore(data) {
 /**
  * Generate UX issues and fixes
  */
-function generateIssuesAndFixes(data, analysis) {
+function generateIssuesAndFixes(data, analysis, isMobile = false) {
   const issues = [];
   const fixes = [];
 
-  const { violations = [], viewport_meta_present, ctas_above_fold } = data;
+  const { violations = [], viewport_meta_present, ctas_above_fold, touch_targets, text_size_issues } = data;
 
   // Critical accessibility violations
   const criticalViolations = violations.filter(v => v.impact === 'critical');
@@ -322,27 +391,81 @@ function generateIssuesAndFixes(data, analysis) {
     });
   }
 
+  // ============================================
+  // Mobile-specific issues
+  // ============================================
+  if (isMobile) {
+    // Touch targets too small
+    if (touch_targets && touch_targets.too_small_count > 0) {
+      issues.push({
+        id: 'touch_targets_small',
+        severity: touch_targets.too_small_count > 5 ? 'high' : 'medium',
+        category: 'Mobile Usability',
+        description: `${touch_targets.too_small_count} touch targets are smaller than ${touch_targets.min_size_threshold}px — difficult to tap on mobile`,
+        source: 'mobile-axe'
+      });
+
+      fixes.push({
+        id: 'fix_touch_targets',
+        issue_id: 'touch_targets_small',
+        title: 'Increase Touch Target Sizes',
+        description: 'Ensure all interactive elements are at least 48×48px for comfortable mobile tapping (WCAG 2.5.5)',
+        effort_hours: 3,
+        impact_pct: 15,
+        priority: 1,
+        source: 'mobile-axe'
+      });
+    }
+
+    // Text too small for mobile
+    if (text_size_issues && text_size_issues.too_small_text_count > 0) {
+      issues.push({
+        id: 'text_too_small',
+        severity: text_size_issues.too_small_text_count > 5 ? 'high' : 'medium',
+        category: 'Mobile Usability',
+        description: `${text_size_issues.too_small_text_count} text elements have font-size below ${text_size_issues.min_font_threshold}px — hard to read on mobile`,
+        source: 'mobile-axe'
+      });
+
+      fixes.push({
+        id: 'fix_text_size',
+        issue_id: 'text_too_small',
+        title: 'Increase Font Sizes for Mobile',
+        description: 'Use a minimum font-size of 12px (16px recommended) for body text on mobile devices',
+        effort_hours: 2,
+        impact_pct: 12,
+        priority: 2,
+        source: 'mobile-axe'
+      });
+    }
+  }
+
   return { issues, fixes };
 }
 
 /**
  * Main analyze function
+ * @param {Object} artifact - Scraper artifact
+ * @param {boolean} isMobile - Whether this is a mobile scan
  */
-async function analyze(artifact) {
+async function analyze(artifact, isMobile = false) {
   const data = {
     violations: artifact.ux.violations,
     violations_count: artifact.ux.violations_count,
     ctas: artifact.ux.ctas,
     ctas_above_fold: artifact.ux.ctas_above_fold,
     dom_node_count: artifact.ux.dom_node_count,
-    viewport_meta_present: artifact.ux.viewport_meta_present
+    viewport_meta_present: artifact.ux.viewport_meta_present,
+    touch_targets: artifact.ux.touch_targets || null,
+    text_size_issues: artifact.ux.text_size_issues || null,
   };
 
-  const analysis = calculateUXScore(data);
-  const { issues, fixes } = generateIssuesAndFixes(data, analysis);
+  const analysis = calculateUXScore(data, isMobile);
+  const { issues, fixes } = generateIssuesAndFixes(data, analysis, isMobile);
 
   return {
     score: analysis.score,
+    scan_mode: isMobile ? 'mobile' : 'desktop',
     accessibility_risk_level: analysis.accessibility_risk_level,
     primary_friction_sources: analysis.primary_friction_sources,
     trust_impact_indicator: analysis.trust_impact_indicator,
@@ -351,6 +474,9 @@ async function analyze(artifact) {
     violations_by_impact: analysis.violations_by_impact,
     ctas_count: data.ctas.length,
     ctas_above_fold: data.ctas_above_fold,
+    // Mobile-specific data
+    touch_targets_too_small: data.touch_targets?.too_small_count ?? null,
+    text_too_small_count: data.text_size_issues?.too_small_text_count ?? null,
     issues,
     fixes
   };
@@ -359,5 +485,6 @@ async function analyze(artifact) {
 module.exports = {
   analyze,
   calculateUXScore,
-  THRESHOLDS
+  THRESHOLDS,
+  MOBILE_THRESHOLDS
 };

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { analyzeWebsite } from '../services/api';
+import { analyzeWebsite, analyzeMobile } from '../services/api';
 import Loader from '../components/Loader';
 
 export default function AnalyzerRedirect() {
@@ -10,6 +10,7 @@ export default function AnalyzerRedirect() {
 
     useEffect(() => {
         const url = params.get('url');
+        const mode = params.get('mode') || 'desktop'; // 'desktop' | 'mobile'
 
         if (!url) {
             navigate('/');
@@ -18,7 +19,9 @@ export default function AnalyzerRedirect() {
 
         const analyze = async () => {
             try {
-                const result = await analyzeWebsite({ url });
+                const result = mode === 'mobile'
+                    ? await analyzeMobile(url)
+                    : await analyzeWebsite({ url });
 
                 // Redirect to dashboard with report ID
                 setTimeout(() => {

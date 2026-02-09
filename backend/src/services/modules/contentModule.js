@@ -1,9 +1,11 @@
 /**
  * Content Module
- * Analyzes content quality, readability, and intent match
+ * Analyzes content quality, readability, intent match, and NLP-powered insights
  */
 
 const { analyzeContentQuality } = require('../../utils/contentAnalyzer');
+const { runNLPAnalysis } = require('../nlp/nlpService');
+const llmService = require('../ai/llmService');
 
 /**
  * Clamp value between 0 and 1
@@ -270,10 +272,10 @@ function generateIssuesAndFixes(data, analysis) {
 }
 
 /**
- * Main analyze function
+ * Main analyze function — now integrates full NLP pipeline + AI content insights
  */
 async function analyze(artifact) {
-  // Use content analyzer utility
+  // Step 1: Rule-based content analysis (existing)
   const contentAnalysis = analyzeContentQuality(artifact.content.visible_text);
 
   const data = {
@@ -289,6 +291,34 @@ async function analyze(artifact) {
   const analysis = calculateContentScore(data);
   const { issues, fixes } = generateIssuesAndFixes(data, analysis);
 
+  // Step 2: Run NLP pipeline in parallel (sentiment, NER, summary, topics, keywords)
+  let nlpResult = null;
+  try {
+    nlpResult = await runNLPAnalysis(artifact.content.visible_text);
+    console.log('[ContentModule] NLP analysis complete:', {
+      sentiment: nlpResult.sentiment?.label,
+      entities: nlpResult.entities?.length,
+      keywords: nlpResult.keywords?.length,
+      topics: nlpResult.topics?.length,
+      hasSummary: !!nlpResult.summary,
+    });
+  } catch (nlpError) {
+    console.warn('[ContentModule] NLP pipeline failed:', nlpError.message);
+  }
+
+  // Step 3: Generate AI content insights via Groq
+  let aiContentInsights = null;
+  try {
+    aiContentInsights = await generateAIContentInsights(data, nlpResult, analysis);
+  } catch (aiError) {
+    console.warn('[ContentModule] AI content insights failed:', aiError.message);
+  }
+
+  // Step 4: Add NLP-generated issues/fixes
+  if (nlpResult) {
+    addNLPIssues(issues, fixes, nlpResult, data);
+  }
+
   return {
     score: analysis.score,
     intent_match_level: analysis.intent_match_level,
@@ -298,11 +328,215 @@ async function analyze(artifact) {
     word_count: data.word_count,
     flesch_reading_ease: data.flesch_reading_ease,
     flesch_kincaid_grade: data.flesch_kincaid_grade,
-    keywords: data.keywords.slice(0, 10),
-    entities: [], // Can be populated with HF NER later
+    keywords: nlpResult?.keywords?.slice(0, 15) || data.keywords.slice(0, 10),
+    entities: nlpResult?.entities || [],
+    // NLP analysis block
+    nlp_analysis: nlpResult ? {
+      sentiment: nlpResult.sentiment,
+      entities: nlpResult.entities?.slice(0, 20) || [],
+      keywords: nlpResult.keywords?.slice(0, 15) || [],
+      phrases: nlpResult.phrases?.slice(0, 10) || [],
+      summary: nlpResult.summary || '',
+      topics: nlpResult.topics || [],
+      advanced_readability: nlpResult.advanced_readability || null,
+    } : null,
+    // AI-powered content insights
+    ai_content_insights: aiContentInsights,
     issues,
     fixes
   };
+}
+
+// ─── AI Content Insights Generator (Groq) ───
+
+const AI_SYSTEM = 'You are an elite content strategist & SEO expert. Return ONLY valid JSON — no markdown, no explanation, no code fences.';
+
+async function generateAIContentInsights(data, nlpResult, analysis) {
+  if (!process.env.GROQ_API_KEY && !process.env.HF_API_KEY) {
+    return null;
+  }
+
+  const prompt = `Analyze this real website content data and return a content quality assessment.
+
+CONTENT METRICS:
+- Word Count: ${data.word_count}
+- Flesch Reading Ease: ${data.flesch_reading_ease}
+- Flesch-Kincaid Grade: ${data.flesch_kincaid_grade}
+- Quality Score: ${data.quality_score}/100
+- Module Score: ${analysis.score}/100
+- Content Depth: ${analysis.content_depth_status}
+- Intent Match: ${analysis.intent_match_level}
+
+NLP DATA:
+- Sentiment: ${nlpResult?.sentiment?.label || 'N/A'} (confidence: ${nlpResult?.sentiment?.confidence || 'N/A'}%)
+- Top Entities: ${(nlpResult?.entities || []).slice(0, 8).map(e => `${e.text} (${e.type})`).join(', ') || 'None'}
+- Top Keywords: ${(nlpResult?.keywords || []).slice(0, 8).map(k => k.word).join(', ') || 'None'}
+- Top Phrases: ${(nlpResult?.phrases || []).slice(0, 5).map(p => p.phrase).join(', ') || 'None'}
+- Topics: ${(nlpResult?.topics || []).slice(0, 3).map(t => `${t.label} (${Math.round(t.score * 100)}%)`).join(', ') || 'Unclassified'}
+- Summary: ${nlpResult?.summary?.slice(0, 300) || 'N/A'}
+
+READABILITY:
+- Avg Sentence Length: ${nlpResult?.advanced_readability?.avg_sentence_length || 'N/A'} words
+- Complex Word Ratio: ${nlpResult?.advanced_readability?.complex_word_ratio || 'N/A'}
+- Passive Voice Ratio: ${nlpResult?.advanced_readability?.passive_voice_ratio || 'N/A'}
+- Jargon Density: ${nlpResult?.advanced_readability?.jargon_density || 'N/A'}
+
+Return JSON:
+{
+  "quality_score": <0-100>,
+  "tone": "professional|casual|technical|marketing|informational|mixed",
+  "target_audience": "general|technical|business|academic|consumer",
+  "strengths": ["strength 1", "strength 2", "strength 3"],
+  "weaknesses": ["weakness 1", "weakness 2"],
+  "engagement_score": <0-100>,
+  "engagement_factors": {
+    "emotional_appeal": <0-100>,
+    "clarity": <0-100>,
+    "actionability": <0-100>,
+    "scannability": <0-100>
+  },
+  "seo_recommendations": {
+    "missing_keywords": ["keyword1", "keyword2"],
+    "keyword_density_issues": "too_high|too_low|optimal",
+    "content_gaps": ["gap 1", "gap 2"]
+  },
+  "improvement_suggestions": [
+    {"area": "clarity|engagement|seo|readability|structure", "suggestion": "specific advice", "priority": "high|medium|low"}
+  ]
+}`;
+
+  try {
+    const raw = await llmService.generateCompletion(prompt, AI_SYSTEM);
+    const clean = (raw || '').replace(/```json/g, '').replace(/```/g, '').trim();
+    const match = clean.match(/\{[\s\S]*\}/);
+    if (!match) return null;
+    const parsed = JSON.parse(match[0]);
+
+    // Validate and sanitize
+    return {
+      quality_score: typeof parsed.quality_score === 'number' ? parsed.quality_score : null,
+      tone: parsed.tone || null,
+      target_audience: parsed.target_audience || null,
+      strengths: Array.isArray(parsed.strengths) ? parsed.strengths.slice(0, 5) : [],
+      weaknesses: Array.isArray(parsed.weaknesses) ? parsed.weaknesses.slice(0, 5) : [],
+      engagement_score: typeof parsed.engagement_score === 'number' ? parsed.engagement_score : null,
+      engagement_factors: parsed.engagement_factors || null,
+      seo_recommendations: parsed.seo_recommendations || null,
+      improvement_suggestions: Array.isArray(parsed.improvement_suggestions) ? parsed.improvement_suggestions.slice(0, 6) : [],
+    };
+  } catch (err) {
+    console.warn('[ContentModule] AI insights parse failed:', err.message);
+    return null;
+  }
+}
+
+// ─── NLP-derived issues/fixes ───
+
+function addNLPIssues(issues, fixes, nlp, data) {
+  // Negative sentiment issue
+  if (nlp.sentiment?.label === 'NEGATIVE' && nlp.sentiment.confidence > 60) {
+    issues.push({
+      id: 'negative_sentiment',
+      severity: 'medium',
+      category: 'Content Tone',
+      description: `Content has a negative sentiment (${nlp.sentiment.confidence}% confidence). This may discourage users.`,
+      source: 'nlp',
+    });
+    fixes.push({
+      id: 'fix_sentiment',
+      issue_id: 'negative_sentiment',
+      title: 'Improve Content Tone',
+      description: 'Rewrite negative sections with positive framing. Focus on solutions rather than problems.',
+      effort_hours: 2,
+      impact_pct: 12,
+      priority: 2,
+      source: 'nlp',
+    });
+  }
+
+  // High passive voice
+  if (nlp.advanced_readability?.passive_voice_ratio > 0.25) {
+    issues.push({
+      id: 'high_passive_voice',
+      severity: 'low',
+      category: 'Readability',
+      description: `${Math.round(nlp.advanced_readability.passive_voice_ratio * 100)}% of sentences use passive voice. Active voice is more engaging.`,
+      source: 'nlp',
+    });
+    fixes.push({
+      id: 'fix_passive_voice',
+      issue_id: 'high_passive_voice',
+      title: 'Reduce Passive Voice',
+      description: 'Convert passive constructions to active voice for clearer, more direct writing.',
+      effort_hours: 1.5,
+      impact_pct: 8,
+      priority: 3,
+      source: 'nlp',
+    });
+  }
+
+  // High jargon density
+  if (nlp.advanced_readability?.jargon_density > 0.15) {
+    issues.push({
+      id: 'high_jargon',
+      severity: 'medium',
+      category: 'Readability',
+      description: `High jargon density (${Math.round(nlp.advanced_readability.jargon_density * 100)}%). Content may be inaccessible to general audiences.`,
+      source: 'nlp',
+    });
+    fixes.push({
+      id: 'fix_jargon',
+      issue_id: 'high_jargon',
+      title: 'Simplify Technical Language',
+      description: 'Replace jargon with plain language or add explanations for technical terms.',
+      effort_hours: 2,
+      impact_pct: 10,
+      priority: 2,
+      source: 'nlp',
+    });
+  }
+
+  // No entities found (content lacks specificity)
+  if (nlp.entities?.length === 0 && data.word_count > 100) {
+    issues.push({
+      id: 'no_entities',
+      severity: 'low',
+      category: 'Content Specificity',
+      description: 'No named entities (people, organizations, locations) detected. Content may lack specificity.',
+      source: 'nlp',
+    });
+    fixes.push({
+      id: 'fix_entities',
+      issue_id: 'no_entities',
+      title: 'Add Specific References',
+      description: 'Include specific names, brands, locations, or organizations to increase content authority and SEO value.',
+      effort_hours: 1,
+      impact_pct: 8,
+      priority: 3,
+      source: 'nlp',
+    });
+  }
+
+  // Long sentences
+  if (nlp.advanced_readability?.avg_sentence_length > 25) {
+    issues.push({
+      id: 'long_sentences',
+      severity: 'low',
+      category: 'Readability',
+      description: `Average sentence length is ${nlp.advanced_readability.avg_sentence_length} words (ideal: 15-20). Long sentences reduce scannability.`,
+      source: 'nlp',
+    });
+    fixes.push({
+      id: 'fix_sentence_length',
+      issue_id: 'long_sentences',
+      title: 'Shorten Sentences',
+      description: 'Break long sentences into shorter ones. Aim for 15-20 words per sentence for optimal web readability.',
+      effort_hours: 1.5,
+      impact_pct: 8,
+      priority: 3,
+      source: 'nlp',
+    });
+  }
 }
 
 module.exports = {

@@ -3,6 +3,8 @@
  * Analyzes website performance using SLM estimator with optional Lighthouse validation
  */
 
+const { runLighthouse } = require('../lighthouse/lighthouseRunner');
+
 /**
  * Clamp value between 0 and 1
  */
@@ -26,37 +28,37 @@ const THRESHOLDS = {
   // LCP (Largest Contentful Paint)
   LCP_GOOD: 2.5,
   LCP_BAD: 4.0,
-  
+
   // CLS (Cumulative Layout Shift)
   CLS_GOOD: 0.1,
   CLS_BAD: 0.25,
-  
+
   // FCP (First Contentful Paint)
   FCP_GOOD: 1.8,
   FCP_BAD: 3.0,
-  
+
   // TTFB (Time to First Byte)
   TTFB_GOOD: 0.8,
   TTFB_BAD: 1.8,
-  
+
   // TBT (Total Blocking Time)
   TBT_GOOD: 200,
   TBT_BAD: 600,
-  
+
   // Resource sizes
   JS_SIZE_GOOD: 200,    // KB
   JS_SIZE_BAD: 500,
-  
+
   CSS_SIZE_GOOD: 50,
   CSS_SIZE_BAD: 150,
-  
+
   IMAGE_SIZE_GOOD: 500,
   IMAGE_SIZE_BAD: 2000,
-  
+
   // Request count
   REQUEST_COUNT_GOOD: 50,
   REQUEST_COUNT_BAD: 150,
-  
+
   // Render blocking
   RENDER_BLOCKING_GOOD: 3,
   RENDER_BLOCKING_BAD: 10
@@ -83,12 +85,12 @@ function calculatePerformanceScore(metrics) {
 
   // Track dominant negative factors
   const factors = [];
-  
+
   // ============================================
   // LOAD Component (45% weight)
   // ============================================
   let LOAD_penalty = 0;
-  
+
   // LCP penalty (most important)
   if (lcp_s !== null) {
     const lcp_penalty = penaltyFromMetric(lcp_s, THRESHOLDS.LCP_GOOD, THRESHOLDS.LCP_BAD);
@@ -97,7 +99,7 @@ function calculatePerformanceScore(metrics) {
       factors.push({ factor: 'LCP', value: lcp_s, penalty: lcp_penalty });
     }
   }
-  
+
   // TTFB penalty
   if (ttfb_s !== null) {
     const ttfb_penalty = penaltyFromMetric(ttfb_s, THRESHOLDS.TTFB_GOOD, THRESHOLDS.TTFB_BAD);
@@ -106,14 +108,14 @@ function calculatePerformanceScore(metrics) {
       factors.push({ factor: 'TTFB', value: ttfb_s, penalty: ttfb_penalty });
     }
   }
-  
+
   // Image size penalty
   const image_penalty = penaltyFromMetric(total_images_kb, THRESHOLDS.IMAGE_SIZE_GOOD, THRESHOLDS.IMAGE_SIZE_BAD);
   LOAD_penalty += 0.15 * image_penalty;
   if (image_penalty > 0.3) {
     factors.push({ factor: 'Image Size', value: total_images_kb, penalty: image_penalty });
   }
-  
+
   // Request count penalty
   const request_penalty = penaltyFromMetric(total_requests, THRESHOLDS.REQUEST_COUNT_GOOD, THRESHOLDS.REQUEST_COUNT_BAD);
   LOAD_penalty += 0.15 * request_penalty;
@@ -125,7 +127,7 @@ function calculatePerformanceScore(metrics) {
   // INTERACT Component (30% weight)
   // ============================================
   let INTERACT_penalty = 0;
-  
+
   // TBT penalty
   if (tbt_ms !== null) {
     const tbt_penalty = penaltyFromMetric(tbt_ms, THRESHOLDS.TBT_GOOD, THRESHOLDS.TBT_BAD);
@@ -134,7 +136,7 @@ function calculatePerformanceScore(metrics) {
       factors.push({ factor: 'TBT', value: tbt_ms, penalty: tbt_penalty });
     }
   }
-  
+
   // FCP penalty
   if (fcp_s !== null) {
     const fcp_penalty = penaltyFromMetric(fcp_s, THRESHOLDS.FCP_GOOD, THRESHOLDS.FCP_BAD);
@@ -143,7 +145,7 @@ function calculatePerformanceScore(metrics) {
       factors.push({ factor: 'FCP', value: fcp_s, penalty: fcp_penalty });
     }
   }
-  
+
   // JS size penalty (affects interactivity)
   const js_penalty = penaltyFromMetric(total_js_kb, THRESHOLDS.JS_SIZE_GOOD, THRESHOLDS.JS_SIZE_BAD);
   INTERACT_penalty += 0.2 * js_penalty;
@@ -155,7 +157,7 @@ function calculatePerformanceScore(metrics) {
   // STABILITY Component (20% weight)
   // ============================================
   let STABILITY_penalty = 0;
-  
+
   if (cls !== null) {
     const cls_penalty = penaltyFromMetric(cls, THRESHOLDS.CLS_GOOD, THRESHOLDS.CLS_BAD);
     STABILITY_penalty = cls_penalty;
@@ -168,11 +170,11 @@ function calculatePerformanceScore(metrics) {
   // COMPLEXITY Component (10% weight)
   // ============================================
   let COMPLEXITY_penalty = 0;
-  
+
   // CSS size
   const css_penalty = penaltyFromMetric(total_css_kb, THRESHOLDS.CSS_SIZE_GOOD, THRESHOLDS.CSS_SIZE_BAD);
   COMPLEXITY_penalty += 0.5 * css_penalty;
-  
+
   // Render blocking resources
   const rb_penalty = penaltyFromMetric(render_blocking_count, THRESHOLDS.RENDER_BLOCKING_GOOD, THRESHOLDS.RENDER_BLOCKING_BAD);
   COMPLEXITY_penalty += 0.5 * rb_penalty;
@@ -183,7 +185,7 @@ function calculatePerformanceScore(metrics) {
   // ============================================
   // Combine penalties with weights
   // ============================================
-  let RAW_PENALTY = 
+  let RAW_PENALTY =
     0.40 * LOAD_penalty +
     0.30 * INTERACT_penalty +
     0.20 * STABILITY_penalty +
@@ -193,27 +195,27 @@ function calculatePerformanceScore(metrics) {
   // Apply boost multipliers
   // ============================================
   let boost = 1.0;
-  
+
   // Critical LCP
   if (lcp_s && lcp_s > 4.0) {
     boost *= 1.15;
   }
-  
+
   // Critical CLS
   if (cls && cls > 0.25) {
     boost *= 1.10;
   }
-  
+
   // Critical TTFB
   if (ttfb_s && ttfb_s > 1.8) {
     boost *= 1.10;
   }
-  
+
   // Heavy JavaScript
   if (total_js_kb > 500) {
     boost *= 1.12;
   }
-  
+
   RAW_PENALTY *= boost;
   RAW_PENALTY = clamp(RAW_PENALTY, 0, 1);
 
@@ -227,7 +229,7 @@ function calculatePerformanceScore(metrics) {
   // ============================================
   let confidence = 'medium';
   const hasAllCoreMetrics = lcp_s !== null && cls !== null && ttfb_s !== null;
-  
+
   if (hasAllCoreMetrics && tbt_ms !== null && fcp_s !== null) {
     confidence = 'high';
   } else if (!hasAllCoreMetrics) {
@@ -238,7 +240,7 @@ function calculatePerformanceScore(metrics) {
   // Recommendation flag
   // ============================================
   let recommendation_flag = 'use_as_final';
-  
+
   if (confidence === 'low' || score < 40) {
     recommendation_flag = 'run_lighthouse';
   } else if (score >= 40 && score < 70) {
@@ -278,7 +280,7 @@ function generateIssuesAndFixes(metrics, analysis) {
       threshold: THRESHOLDS.LCP_GOOD,
       description: `Largest Contentful Paint is ${metrics.lcp_s.toFixed(2)}s (should be < ${THRESHOLDS.LCP_GOOD}s)`
     });
-    
+
     fixes.push({
       id: 'optimize_lcp',
       issue_id: 'lcp_slow',
@@ -301,7 +303,7 @@ function generateIssuesAndFixes(metrics, analysis) {
       threshold: THRESHOLDS.CLS_GOOD,
       description: `Cumulative Layout Shift is ${metrics.cls.toFixed(3)} (should be < ${THRESHOLDS.CLS_GOOD})`
     });
-    
+
     fixes.push({
       id: 'fix_cls',
       issue_id: 'cls_high',
@@ -324,7 +326,7 @@ function generateIssuesAndFixes(metrics, analysis) {
       threshold: THRESHOLDS.JS_SIZE_GOOD,
       description: `Total JavaScript is ${metrics.total_js_kb.toFixed(1)} KB (should be < ${THRESHOLDS.JS_SIZE_GOOD} KB)`
     });
-    
+
     fixes.push({
       id: 'reduce_js',
       issue_id: 'js_heavy',
@@ -347,7 +349,7 @@ function generateIssuesAndFixes(metrics, analysis) {
       threshold: THRESHOLDS.IMAGE_SIZE_GOOD,
       description: `Total images are ${metrics.total_images_kb.toFixed(1)} KB (should be < ${THRESHOLDS.IMAGE_SIZE_GOOD} KB)`
     });
-    
+
     fixes.push({
       id: 'optimize_images',
       issue_id: 'images_heavy',
@@ -370,7 +372,7 @@ function generateIssuesAndFixes(metrics, analysis) {
       threshold: THRESHOLDS.TTFB_GOOD,
       description: `Time to First Byte is ${metrics.ttfb_s.toFixed(2)}s (should be < ${THRESHOLDS.TTFB_GOOD}s)`
     });
-    
+
     fixes.push({
       id: 'improve_ttfb',
       issue_id: 'ttfb_slow',
@@ -392,7 +394,7 @@ function generateIssuesAndFixes(metrics, analysis) {
       threshold: THRESHOLDS.RENDER_BLOCKING_GOOD,
       description: `${metrics.render_blocking_count} render-blocking resources detected`
     });
-    
+
     fixes.push({
       id: 'eliminate_render_blocking',
       issue_id: 'render_blocking',
@@ -410,9 +412,10 @@ function generateIssuesAndFixes(metrics, analysis) {
 /**
  * Main analyze function
  * @param {Object} artifact - Scraper artifact
+ * @param {Object} opts - Options (url, emulateMobile)
  * @returns {Promise<Object>} Performance module result
  */
-async function analyze(artifact) {
+async function analyze(artifact, opts = {}) {
   // Extract metrics from artifact
   const metrics = {
     lcp_s: artifact.performance.lcp_s,
@@ -427,14 +430,77 @@ async function analyze(artifact) {
     render_blocking_count: artifact.resources.render_blocking_count
   };
 
-  // Calculate performance score
+  // Calculate SLM performance score
   const analysis = calculatePerformanceScore(metrics);
-  
-  // Generate issues and fixes
+
+  // Generate issues and fixes from SLM
   const { issues, fixes } = generateIssuesAndFixes(metrics, analysis);
 
+  // ============================================
+  // Lighthouse Validation (conditional)
+  // ============================================
+  let source = 'slm';
+  let lighthouseResult = null;
+  let finalScore = analysis.score;
+  let lighthouseMetrics = null;
+  let lighthouseOpportunities = null;
+
+  const url = opts.url || artifact.finalUrl || artifact.originalUrl;
+
+  if (analysis.recommendation_flag === 'run_lighthouse' && url) {
+    console.log(`[PerfModule] SLM confidence=${analysis.confidence}, score=${analysis.score} → Running Lighthouse validation...`);
+
+    try {
+      lighthouseResult = await runLighthouse(url, {
+        emulateMobile: opts.emulateMobile || false,
+      });
+
+      if (lighthouseResult && lighthouseResult.score != null) {
+        // Hybrid scoring: 40% SLM + 60% Lighthouse (Lighthouse is more reliable)
+        finalScore = Math.round(0.4 * analysis.score + 0.6 * lighthouseResult.score);
+        source = 'hybrid';
+        lighthouseMetrics = lighthouseResult.metrics;
+        lighthouseOpportunities = lighthouseResult.opportunities;
+
+        console.log(`[PerfModule] Lighthouse score=${lighthouseResult.score}, hybrid final=${finalScore}`);
+
+        // Add Lighthouse-sourced issues
+        if (lighthouseResult.opportunities) {
+          for (const opp of lighthouseResult.opportunities.slice(0, 5)) {
+            issues.push({
+              id: `lh_${opp.id}`,
+              severity: opp.score < 0.5 ? 'high' : 'medium',
+              metric: 'Lighthouse',
+              value: opp.displayValue || null,
+              description: `${opp.title}${opp.displayValue ? ` — ${opp.displayValue}` : ''}`,
+              source: 'lighthouse'
+            });
+
+            fixes.push({
+              id: `fix_lh_${opp.id}`,
+              issue_id: `lh_${opp.id}`,
+              title: opp.title,
+              description: opp.description || 'See Lighthouse audit for details',
+              effort_hours: 3,
+              impact_pct: Math.round((1 - (opp.score || 0)) * 20),
+              priority: opp.score < 0.5 ? 1 : 2,
+              source: 'lighthouse'
+            });
+          }
+        }
+      }
+    } catch (lhError) {
+      console.warn('[PerfModule] Lighthouse validation failed, using SLM-only:', lhError.message);
+    }
+  }
+
   return {
-    score: analysis.score,
+    score: finalScore,
+    source,
+    slm_score: analysis.score,
+    lighthouse_score: lighthouseResult?.score ?? null,
+    lighthouse_metrics: lighthouseMetrics,
+    lighthouse_opportunities: lighthouseOpportunities,
     confidence: analysis.confidence,
     dominant_negative_factors: analysis.dominant_negative_factors,
     recommendation_flag: analysis.recommendation_flag,

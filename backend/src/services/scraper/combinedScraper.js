@@ -21,22 +21,22 @@ async function combinedScrape(url, opts = {}) {
     ...opts
   };
 
-  const browser = await chromium.launch({ 
+  const browser = await chromium.launch({
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
     headless: true
   });
 
-  const viewport = options.emulateMobile 
-    ? { width: 375, height: 812 } 
+  const viewport = options.emulateMobile
+    ? { width: 375, height: 812 }
     : { width: 1200, height: 900 };
 
   const userAgent = options.emulateMobile
     ? 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1'
     : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
-  const context = await browser.newContext({ 
-    viewport, 
-    userAgent 
+  const context = await browser.newContext({
+    viewport,
+    userAgent
   });
 
   const page = await context.newPage();
@@ -45,9 +45,9 @@ async function combinedScrape(url, opts = {}) {
   // STEP 1: Inject Performance Observers
   // ============================================
   await page.addInitScript(() => {
-    window.__perf = { 
-      lcp: null, 
-      cls: 0, 
+    window.__perf = {
+      lcp: null,
+      cls: 0,
       fcp: null,
       entries: [],
       layoutShifts: []
@@ -167,9 +167,9 @@ async function combinedScrape(url, opts = {}) {
   let navigationError = null;
 
   try {
-    await page.goto(url, { 
-      waitUntil: 'networkidle', 
-      timeout: options.timeout 
+    await page.goto(url, {
+      waitUntil: 'networkidle',
+      timeout: options.timeout
     });
   } catch (error) {
     navigationError = error.message;
@@ -306,10 +306,10 @@ async function combinedScrape(url, opts = {}) {
       .slice(0, 10);
 
     // Visible Text (main content)
-    const mainElement = document.querySelector('main') || 
-                       document.querySelector('article') || 
-                       document.querySelector('[role="main"]') ||
-                       document.body;
+    const mainElement = document.querySelector('main') ||
+      document.querySelector('article') ||
+      document.querySelector('[role="main"]') ||
+      document.body;
     const visibleText = mainElement.innerText || '';
 
     // DOM Stats
@@ -348,7 +348,7 @@ async function combinedScrape(url, opts = {}) {
       const rect = el.getBoundingClientRect();
       const text = el.innerText || el.getAttribute('aria-label') || el.getAttribute('title') || el.value || '';
       const computedStyle = window.getComputedStyle(el);
-      
+
       return {
         text: text.trim().slice(0, 60),
         tagName: el.tagName.toLowerCase(),
@@ -370,21 +370,104 @@ async function combinedScrape(url, opts = {}) {
   // ============================================
   let axeResults = null;
   try {
-    await page.addScriptTag({ 
-      path: require.resolve('axe-core/axe.min.js') 
+    await page.addScriptTag({
+      path: require.resolve('axe-core/axe.min.js')
     });
-    
-    axeResults = await page.evaluate(async () => {
+
+    // Include best-practice rules for mobile scans
+    const axeTags = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
+    if (options.emulateMobile) {
+      axeTags.push('best-practice');
+    }
+
+    axeResults = await page.evaluate(async (tags) => {
       return await axe.run(document, {
         runOnly: {
           type: 'tag',
-          values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']
+          values: tags
         }
       });
-    });
+    }, axeTags);
   } catch (e) {
     console.warn('Axe-core scanning failed:', e.message);
     axeResults = { violations: [], passes: [], incomplete: [] };
+  }
+
+  // ============================================
+  // STEP 9b: Mobile Touch Target Detection
+  // ============================================
+  let touchTargets = null;
+  if (options.emulateMobile) {
+    try {
+      touchTargets = await page.evaluate(() => {
+        const interactiveSelectors = 'a, button, [role="button"], input, select, textarea, [tabindex]';
+        const els = document.querySelectorAll(interactiveSelectors);
+        const tooSmall = [];
+        const MIN_SIZE = 48; // px - WCAG 2.5.5 / Google mobile-friendly guideline
+
+        els.forEach(el => {
+          const rect = el.getBoundingClientRect();
+          if (rect.width > 0 && rect.height > 0) {
+            if (rect.width < MIN_SIZE || rect.height < MIN_SIZE) {
+              tooSmall.push({
+                tagName: el.tagName.toLowerCase(),
+                text: (el.innerText || el.getAttribute('aria-label') || '').trim().slice(0, 40),
+                width: Math.round(rect.width),
+                height: Math.round(rect.height),
+                top: Math.round(rect.top),
+                left: Math.round(rect.left),
+              });
+            }
+          }
+        });
+
+        return {
+          total_interactive: els.length,
+          too_small_count: tooSmall.length,
+          too_small: tooSmall.slice(0, 30), // Cap at 30
+          min_size_threshold: MIN_SIZE,
+        };
+      });
+    } catch (e) {
+      console.warn('Touch target detection failed:', e.message);
+      touchTargets = { total_interactive: 0, too_small_count: 0, too_small: [], min_size_threshold: 48 };
+    }
+  }
+
+  // ============================================
+  // STEP 9c: Mobile Text Size Detection
+  // ============================================
+  let textSizeIssues = null;
+  if (options.emulateMobile) {
+    try {
+      textSizeIssues = await page.evaluate(() => {
+        const MIN_FONT_SIZE = 12; // px
+        const textEls = document.querySelectorAll('p, span, li, td, th, label, a, div');
+        const tooSmall = [];
+
+        textEls.forEach(el => {
+          const style = window.getComputedStyle(el);
+          const fontSize = parseFloat(style.fontSize);
+          const text = (el.innerText || '').trim();
+          if (text.length > 5 && fontSize < MIN_FONT_SIZE) {
+            tooSmall.push({
+              tagName: el.tagName.toLowerCase(),
+              fontSize: Math.round(fontSize * 10) / 10,
+              text: text.slice(0, 40),
+            });
+          }
+        });
+
+        return {
+          too_small_text_count: tooSmall.length,
+          too_small_text: tooSmall.slice(0, 20),
+          min_font_threshold: MIN_FONT_SIZE,
+        };
+      });
+    } catch (e) {
+      console.warn('Text size detection failed:', e.message);
+      textSizeIssues = { too_small_text_count: 0, too_small_text: [], min_font_threshold: 12 };
+    }
   }
 
   // ============================================
@@ -411,7 +494,7 @@ async function combinedScrape(url, opts = {}) {
     .filter(r => /font|\.woff|\.woff2|\.ttf|\.otf/i.test(r.contentType + r.url))
     .reduce((sum, r) => sum + (r.size || 0), 0) / 1024;
 
-  const renderBlockingResources = resources.filter(r => 
+  const renderBlockingResources = resources.filter(r =>
     (r.contentType.includes('css') || r.contentType.includes('javascript')) &&
     r.url.includes('http')
   );
@@ -511,7 +594,11 @@ async function combinedScrape(url, opts = {}) {
       ctas,
       ctas_above_fold: ctas.filter(c => c.aboveFold).length,
       dom_node_count: domSummary.domNodeCount,
-      viewport_meta_present: !!domSummary.viewport
+      viewport_meta_present: !!domSummary.viewport,
+      // Mobile-specific data (null when desktop scan)
+      touch_targets: touchTargets,
+      text_size_issues: textSizeIssues,
+      is_mobile_scan: options.emulateMobile,
     },
 
     // Content

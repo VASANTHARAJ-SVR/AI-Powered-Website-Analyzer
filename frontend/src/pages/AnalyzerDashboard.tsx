@@ -4,7 +4,8 @@ import {
     ArrowLeft, Globe, Zap, Search, Smartphone, FileText,
     TrendingUp, Shield, ChevronRight, Clock, Activity,
     Server, Tag, Layout, Image, Eye, Type, Gauge,
-    AlertTriangle, CheckCircle, XCircle, Info, ArrowDown
+    AlertTriangle, CheckCircle, XCircle, Info, ArrowDown,
+    Brain, Target, Compass
 } from 'lucide-react';
 import { getReport, type Report } from '../services/api';
 import Loader from '../components/Loader';
@@ -183,10 +184,10 @@ export function AnalyzerDashboard() {
                 {/* ── Logo (top-right) ── */}
                 <Link to="/" className="dash-logo">
                     <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
-                        <rect width="36" height="36" rx="8" fill="#aee92b"/>
-                        <path d="M10 26L18 10L26 26" stroke="#0a0a0f" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"/>
-                        <circle cx="18" cy="16.5" r="2.2" fill="#0a0a0f"/>
-                        <path d="M13 22H23" stroke="#0a0a0f" strokeWidth="2.2" strokeLinecap="round"/>
+                        <rect width="36" height="36" rx="8" fill="#aee92b" />
+                        <path d="M10 26L18 10L26 26" stroke="#0a0a0f" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
+                        <circle cx="18" cy="16.5" r="2.2" fill="#0a0a0f" />
+                        <path d="M13 22H23" stroke="#0a0a0f" strokeWidth="2.2" strokeLinecap="round" />
                     </svg>
                     <span className="dash-logo-text">
                         <span className="dash-logo-ai">AI</span>
@@ -241,6 +242,84 @@ export function AnalyzerDashboard() {
                     </div>
                 </div>
 
+                {/* ── AI Strategic Analysis ── */}
+                {report.ai_insights && (
+                    <div className="ai-insights-section">
+                        <div className="dash-section-header">
+                            <span className="dash-section-label" style={{ color: '#a78bfa', borderColor: 'rgba(167,139,250,0.2)', backgroundColor: 'rgba(167,139,250,0.06)' }}>AI Analysis</span>
+                            <h2 className="dash-section-title">Strategic <span className="accent">Analysis</span></h2>
+                            <p className="dash-section-subtitle">AI-generated roadmap for maximum impact and ROI</p>
+                        </div>
+
+                        {/* Executive Summary — full width */}
+                        <div className="ai-card ai-card--summary">
+                            <div className="ai-card-header">
+                                <div className="ai-card-icon"><Brain size={18} /></div>
+                                <h3>Executive Summary</h3>
+                            </div>
+                            <p className="ai-text">{report.ai_insights.executiveSummary}</p>
+                        </div>
+
+                        {/* Top Priorities */}
+                        {report.ai_insights.topPriorities?.length > 0 && (
+                            <div className="ai-card ai-card--priorities">
+                                <div className="ai-card-header">
+                                    <div className="ai-card-icon"><Target size={18} /></div>
+                                    <h3>Top Priorities</h3>
+                                    <span className="ai-card-count">{report.ai_insights.topPriorities.length}</span>
+                                </div>
+                                <div className="ai-priority-list">
+                                    {report.ai_insights.topPriorities.map((p, i) => (
+                                        <div key={i} className="ai-priority-item">
+                                            <span className="ai-priority-num">{String(i + 1).padStart(2, '0')}</span>
+                                            <div className="ai-priority-body">
+                                                <div className="ai-priority-top">
+                                                    <span className="ai-priority-title">{p.title}</span>
+                                                    <div className="ai-badges">
+                                                        <span className={`ai-badge ai-badge--${p.impact.toLowerCase()}`}>{p.impact}</span>
+                                                        <span className="ai-badge ai-badge--roi">{p.estimatedROI}</span>
+                                                    </div>
+                                                </div>
+                                                <p className="ai-priority-desc">{p.description}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Quick Wins & Long Term — side by side */}
+                        <div className="ai-dual">
+                            {report.ai_insights.quickWins?.length > 0 && (
+                                <div className="ai-card ai-card--half">
+                                    <div className="ai-card-header">
+                                        <div className="ai-card-icon ai-card-icon--green"><Zap size={18} /></div>
+                                        <h3>Quick Wins</h3>
+                                    </div>
+                                    <ul className="ai-list">
+                                        {report.ai_insights.quickWins.map((w, i) => (
+                                            <li key={i}><span className="ai-list-dot" />{w}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                            {report.ai_insights.longTermGoals?.length > 0 && (
+                                <div className="ai-card ai-card--half">
+                                    <div className="ai-card-header">
+                                        <div className="ai-card-icon ai-card-icon--blue"><Compass size={18} /></div>
+                                        <h3>Long-Term Goals</h3>
+                                    </div>
+                                    <ul className="ai-list">
+                                        {report.ai_insights.longTermGoals.map((g, i) => (
+                                            <li key={i}><span className="ai-list-dot ai-list-dot--blue" />{g}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {/* ── Module Score Cards ── */}
                 <div className="dash-section-header">
                     <span className="dash-section-label">Audit Results</span>
@@ -257,7 +336,11 @@ export function AnalyzerDashboard() {
                             <div
                                 key={module.name}
                                 className={`grade-module-card ${isActive ? 'module-active' : ''}`}
-                                style={isActive ? { borderColor: modColor, boxShadow: `0 0 20px ${modColor}15` } : undefined}
+                                style={{
+                                    '--mod-color': modColor,
+                                    ...(isActive ? { borderColor: modColor, boxShadow: `0 0 24px ${modColor}18` } : {}),
+                                    animationDelay: `${0.15 + moduleScores.indexOf(module) * 0.08}s`,
+                                } as React.CSSProperties}
                                 onClick={() => setActiveModule(module.name)}
                             >
                                 <div className="module-card-top">
@@ -297,6 +380,24 @@ export function AnalyzerDashboard() {
                                 <span className="dash-section-label" style={{ color: '#00C49F', borderColor: '#00C49F40', backgroundColor: '#00C49F12' }}>Performance</span>
                                 <h2 className="dash-section-title">Core Web <span className="accent">Vitals</span></h2>
                                 <p className="dash-section-subtitle">LCP, FID/TBT, CLS, TTFB — real metrics from your page</p>
+                                {/* Lighthouse & score source badges */}
+                                <div className="perf-badges">
+                                    {perf.source === 'hybrid' && (
+                                        <span className="perf-badge perf-badge-lighthouse">
+                                            <CheckCircle size={12} /> Verified by Lighthouse
+                                        </span>
+                                    )}
+                                    {perf.source === 'slm' && (
+                                        <span className="perf-badge perf-badge-slm">
+                                            <Gauge size={12} /> SLM Estimator
+                                        </span>
+                                    )}
+                                    {perf.lighthouse_score != null && (
+                                        <span className="perf-badge perf-badge-score">
+                                            LH: {perf.lighthouse_score} · SLM: {perf.slm_score}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                             <div className="metrics-grid">
                                 <MetricCard icon={<Clock size={20} />} label="LCP" sublabel="Largest Contentful Paint" value={formatMetric(perf.metrics?.lcp_s, 's')} color={getStatusColor(perf.metrics?.lcp_s ?? 0, 2.5, 4.0)} />
@@ -346,11 +447,27 @@ export function AnalyzerDashboard() {
                                 <span className="dash-section-label" style={{ color: '#F59E0B', borderColor: '#F59E0B40', backgroundColor: '#F59E0B12' }}>UX & Accessibility</span>
                                 <h2 className="dash-section-title">User <span className="accent">Experience</span></h2>
                                 <p className="dash-section-subtitle">Mobile viewport, touch targets, accessibility, and layout analysis</p>
+                                {/* Mobile scan badge */}
+                                {ux.scan_mode === 'mobile' && (
+                                    <div className="perf-badges">
+                                        <span className="perf-badge perf-badge-mobile">
+                                            <Smartphone size={12} /> Mobile Axe Scan
+                                        </span>
+                                        {ux.touch_targets_too_small != null && (
+                                            <span className="perf-badge perf-badge-score">
+                                                Touch issues: {ux.touch_targets_too_small}
+                                            </span>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                             <div className="detail-cards-grid">
                                 <DetailCard title="Mobile / Viewport" icon={<Smartphone size={18} />} color="#F59E0B" items={[
+                                    { label: 'Scan Mode', value: ux.scan_mode === 'mobile' ? 'Mobile' : 'Desktop', status: 'neutral' },
                                     { label: 'Viewport Meta', value: ux.viewport_meta_present !== undefined ? (ux.viewport_meta_present ? 'Present' : 'Missing') : 'N/A', status: ux.viewport_meta_present ? 'good' : 'bad' },
                                     { label: 'CTAs Above Fold', value: `${ux.ctas_above_fold ?? 'N/A'}`, status: (ux.ctas_above_fold ?? 0) >= 1 ? 'good' : 'warn' },
+                                    ...(ux.touch_targets_too_small != null ? [{ label: 'Touch Targets < 48px', value: `${ux.touch_targets_too_small}`, status: ux.touch_targets_too_small === 0 ? 'good' as const : 'bad' as const }] : []),
+                                    ...(ux.text_too_small_count != null ? [{ label: 'Text Too Small', value: `${ux.text_too_small_count}`, status: ux.text_too_small_count === 0 ? 'good' as const : 'warn' as const }] : []),
                                 ]} />
                                 <DetailCard title="Touch & CTAs" icon={<Eye size={18} />} color="#F59E0B" items={[
                                     { label: 'Total CTAs', value: `${ux.ctas_count ?? 'N/A'}`, status: 'neutral' },
@@ -395,6 +512,294 @@ export function AnalyzerDashboard() {
                                     { label: 'Content Gaps', value: content.primary_content_gaps?.length ? content.primary_content_gaps.join(', ') : 'None', status: (content.primary_content_gaps?.length ?? 0) === 0 ? 'good' : 'warn' },
                                 ]} />
                             </div>
+
+                            {/* ── NLP Analysis Section ── */}
+                            {content.nlp_analysis && (
+                                <>
+                                    <div className="dash-section-header" style={{ marginTop: '2rem' }}>
+                                        <span className="dash-section-label" style={{ color: '#a78bfa', borderColor: '#a78bfa40', backgroundColor: '#a78bfa12' }}>
+                                            <Brain size={12} style={{ display: 'inline', verticalAlign: '-2px', marginRight: '4px' }} />NLP
+                                        </span>
+                                        <h2 className="dash-section-title">NLP <span className="accent" style={{ color: '#a78bfa' }}>Analysis</span></h2>
+                                        <p className="dash-section-subtitle">Sentiment, entities, topics, and advanced readability powered by AI models</p>
+                                    </div>
+
+                                    {/* Sentiment + Summary Row */}
+                                    <div className="nlp-top-row">
+                                        {/* Sentiment Indicator */}
+                                        {content.nlp_analysis.sentiment && (
+                                            <div className="nlp-sentiment-card">
+                                                <div className="nlp-card-title"><Activity size={15} /> Sentiment</div>
+                                                <div className="nlp-sentiment-body">
+                                                    <span className={`nlp-sentiment-badge nlp-sentiment--${content.nlp_analysis.sentiment.label?.toLowerCase()}`}>
+                                                        {content.nlp_analysis.sentiment.label === 'POSITIVE' ? '😊' : content.nlp_analysis.sentiment.label === 'NEGATIVE' ? '😟' : '😐'}
+                                                        {' '}{content.nlp_analysis.sentiment.label}
+                                                    </span>
+                                                    <div className="nlp-sentiment-bar-track">
+                                                        <div className="nlp-sentiment-bar-fill" style={{
+                                                            width: `${content.nlp_analysis.sentiment.confidence ?? 50}%`,
+                                                            background: content.nlp_analysis.sentiment.label === 'POSITIVE' ? '#10B981' : content.nlp_analysis.sentiment.label === 'NEGATIVE' ? '#EF4444' : '#F59E0B',
+                                                        }} />
+                                                    </div>
+                                                    <span className="nlp-sentiment-conf">{content.nlp_analysis.sentiment.confidence ?? '—'}% confidence</span>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Summary */}
+                                        {content.nlp_analysis.summary && (
+                                            <div className="nlp-summary-card">
+                                                <div className="nlp-card-title"><Compass size={15} /> AI Summary</div>
+                                                <p className="nlp-summary-text">{content.nlp_analysis.summary}</p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Topics */}
+                                    {content.nlp_analysis.topics?.length > 0 && (
+                                        <div className="nlp-block">
+                                            <div className="nlp-card-title"><Target size={15} /> Detected Topics</div>
+                                            <div className="nlp-chips">
+                                                {content.nlp_analysis.topics.map((t: any, i: number) => (
+                                                    <span key={i} className="nlp-topic-chip" style={{ '--topic-opacity': Math.max(0.35, t.score || 0.5) } as React.CSSProperties}>
+                                                        {t.label} <span className="nlp-chip-score">{Math.round((t.score || 0) * 100)}%</span>
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Entities */}
+                                    {content.nlp_analysis.entities?.length > 0 && (
+                                        <div className="nlp-block">
+                                            <div className="nlp-card-title"><Tag size={15} /> Named Entities</div>
+                                            <div className="nlp-chips">
+                                                {content.nlp_analysis.entities.map((e: any, i: number) => (
+                                                    <span key={i} className={`nlp-entity-chip nlp-entity--${(e.type || 'misc').toLowerCase()}`}>
+                                                        {e.text}
+                                                        <span className="nlp-entity-type">{e.type}</span>
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Keywords + Phrases table */}
+                                    {(content.nlp_analysis.keywords?.length > 0 || content.nlp_analysis.phrases?.length > 0) && (
+                                        <div className="nlp-block">
+                                            <div className="nlp-card-title"><Search size={15} /> Keywords & Phrases</div>
+                                            <div className="nlp-kw-grid">
+                                                {content.nlp_analysis.keywords?.length > 0 && (
+                                                    <div className="nlp-kw-section">
+                                                        <span className="nlp-kw-heading">Top Keywords</span>
+                                                        <div className="nlp-kw-list">
+                                                            {content.nlp_analysis.keywords.slice(0, 10).map((k: any, i: number) => (
+                                                                <div key={i} className="nlp-kw-row">
+                                                                    <span className="nlp-kw-word">{k.word || k}</span>
+                                                                    <div className="nlp-kw-bar-track">
+                                                                        <div className="nlp-kw-bar-fill" style={{ width: `${Math.min(100, (k.relevance || k.score || 0.5) * 100)}%` }} />
+                                                                    </div>
+                                                                    <span className="nlp-kw-score">{((k.relevance || k.score || 0) * 100).toFixed(0)}%</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {content.nlp_analysis.phrases?.length > 0 && (
+                                                    <div className="nlp-kw-section">
+                                                        <span className="nlp-kw-heading">Key Phrases</span>
+                                                        <div className="nlp-chips" style={{ marginTop: '0.5rem' }}>
+                                                            {content.nlp_analysis.phrases.slice(0, 8).map((p: any, i: number) => (
+                                                                <span key={i} className="nlp-phrase-chip">{p.phrase || p}</span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Advanced Readability */}
+                                    {content.nlp_analysis.advanced_readability && (
+                                        <div className="nlp-block">
+                                            <div className="nlp-card-title"><Gauge size={15} /> Advanced Readability</div>
+                                            <div className="nlp-read-grid">
+                                                {[
+                                                    { label: 'Avg Sentence Length', value: `${content.nlp_analysis.advanced_readability.avg_sentence_length ?? '—'} words`, good: (content.nlp_analysis.advanced_readability.avg_sentence_length ?? 20) <= 20 },
+                                                    { label: 'Complex Word Ratio', value: `${((content.nlp_analysis.advanced_readability.complex_word_ratio ?? 0) * 100).toFixed(1)}%`, good: (content.nlp_analysis.advanced_readability.complex_word_ratio ?? 0) < 0.15 },
+                                                    { label: 'Passive Voice', value: `${((content.nlp_analysis.advanced_readability.passive_voice_ratio ?? 0) * 100).toFixed(1)}%`, good: (content.nlp_analysis.advanced_readability.passive_voice_ratio ?? 0) < 0.2 },
+                                                    { label: 'Jargon Density', value: `${((content.nlp_analysis.advanced_readability.jargon_density ?? 0) * 100).toFixed(1)}%`, good: (content.nlp_analysis.advanced_readability.jargon_density ?? 0) < 0.1 },
+                                                    { label: 'Questions', value: `${content.nlp_analysis.advanced_readability.question_count ?? 0}`, good: true },
+                                                    { label: 'Paragraphs', value: `${content.nlp_analysis.advanced_readability.paragraph_count ?? 0}`, good: (content.nlp_analysis.advanced_readability.paragraph_count ?? 0) >= 3 },
+                                                ].map((m, i) => (
+                                                    <div key={i} className="nlp-read-item">
+                                                        <span className="nlp-read-label">{m.label}</span>
+                                                        <span className={`nlp-read-value ${m.good ? 'nlp-read--good' : 'nlp-read--warn'}`}>{m.value}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+
+                            {/* ── AI Content Insights ── */}
+                            {content.ai_content_insights && (
+                                <>
+                                    <div className="dash-section-header" style={{ marginTop: '2rem' }}>
+                                        <span className="dash-section-label" style={{ color: '#f472b6', borderColor: '#f472b640', backgroundColor: '#f472b612' }}>
+                                            <Brain size={12} style={{ display: 'inline', verticalAlign: '-2px', marginRight: '4px' }} />AI Insights
+                                        </span>
+                                        <h2 className="dash-section-title">AI Content <span className="accent" style={{ color: '#f472b6' }}>Insights</span></h2>
+                                        <p className="dash-section-subtitle">Quality assessment, engagement analysis, and SEO optimization from Groq AI</p>
+                                    </div>
+
+                                    {/* Quality + Engagement Scores */}
+                                    <div className="nlp-top-row">
+                                        <div className="nlp-sentiment-card">
+                                            <div className="nlp-card-title"><TrendingUp size={15} /> Quality & Engagement</div>
+                                            <div className="aci-scores-row">
+                                                {content.ai_content_insights.quality_score != null && (
+                                                    <div className="aci-score-circle">
+                                                        <svg viewBox="0 0 60 60" className="aci-ring-svg">
+                                                            <circle cx="30" cy="30" r="26" fill="none" stroke="#1e1e2a" strokeWidth="5" />
+                                                            <circle cx="30" cy="30" r="26" fill="none" stroke="#EC4899" strokeWidth="5" strokeDasharray={`${(content.ai_content_insights.quality_score / 100) * 163.4} 163.4`} strokeLinecap="round" transform="rotate(-90 30 30)" />
+                                                        </svg>
+                                                        <span className="aci-score-num">{content.ai_content_insights.quality_score}</span>
+                                                        <span className="aci-score-lbl">Quality</span>
+                                                    </div>
+                                                )}
+                                                {content.ai_content_insights.engagement_score != null && (
+                                                    <div className="aci-score-circle">
+                                                        <svg viewBox="0 0 60 60" className="aci-ring-svg">
+                                                            <circle cx="30" cy="30" r="26" fill="none" stroke="#1e1e2a" strokeWidth="5" />
+                                                            <circle cx="30" cy="30" r="26" fill="none" stroke="#a78bfa" strokeWidth="5" strokeDasharray={`${(content.ai_content_insights.engagement_score / 100) * 163.4} 163.4`} strokeLinecap="round" transform="rotate(-90 30 30)" />
+                                                        </svg>
+                                                        <span className="aci-score-num">{content.ai_content_insights.engagement_score}</span>
+                                                        <span className="aci-score-lbl">Engagement</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            {/* Tone + Audience badges */}
+                                            <div className="aci-meta-row">
+                                                {content.ai_content_insights.tone && (
+                                                    <span className="aci-meta-badge" style={{ borderColor: '#EC489940', color: '#EC4899', background: '#EC489912' }}>
+                                                        {content.ai_content_insights.tone}
+                                                    </span>
+                                                )}
+                                                {content.ai_content_insights.target_audience && (
+                                                    <span className="aci-meta-badge" style={{ borderColor: '#a78bfa40', color: '#a78bfa', background: '#a78bfa12' }}>
+                                                        {content.ai_content_insights.target_audience}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Engagement Factors */}
+                                        {content.ai_content_insights.engagement_factors && (
+                                            <div className="nlp-summary-card">
+                                                <div className="nlp-card-title"><Activity size={15} /> Engagement Factors</div>
+                                                <div className="aci-factors">
+                                                    {Object.entries(content.ai_content_insights.engagement_factors).map(([key, val]: [string, any]) => (
+                                                        <div key={key} className="aci-factor-row">
+                                                            <span className="aci-factor-label">{key.replace(/_/g, ' ')}</span>
+                                                            <div className="nlp-kw-bar-track">
+                                                                <div className="nlp-kw-bar-fill" style={{ width: `${val}%`, background: val >= 70 ? '#10B981' : val >= 40 ? '#F59E0B' : '#EF4444' }} />
+                                                            </div>
+                                                            <span className="aci-factor-val">{val}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Strengths & Weaknesses */}
+                                    {(content.ai_content_insights.strengths?.length > 0 || content.ai_content_insights.weaknesses?.length > 0) && (
+                                        <div className="nlp-top-row" style={{ marginTop: '0.75rem' }}>
+                                            {content.ai_content_insights.strengths?.length > 0 && (
+                                                <div className="nlp-block" style={{ flex: 1 }}>
+                                                    <div className="nlp-card-title"><CheckCircle size={15} style={{ color: '#10B981' }} /> Strengths</div>
+                                                    <ul className="aci-list aci-list--good">
+                                                        {content.ai_content_insights.strengths.map((s: string, i: number) => (
+                                                            <li key={i}>{s}</li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
+                                            {content.ai_content_insights.weaknesses?.length > 0 && (
+                                                <div className="nlp-block" style={{ flex: 1 }}>
+                                                    <div className="nlp-card-title"><XCircle size={15} style={{ color: '#EF4444' }} /> Weaknesses</div>
+                                                    <ul className="aci-list aci-list--bad">
+                                                        {content.ai_content_insights.weaknesses.map((w: string, i: number) => (
+                                                            <li key={i}>{w}</li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* SEO Recommendations */}
+                                    {content.ai_content_insights.seo_recommendations && (
+                                        <div className="nlp-block" style={{ marginTop: '0.75rem' }}>
+                                            <div className="nlp-card-title"><Search size={15} /> SEO Recommendations</div>
+                                            <div className="aci-seo-grid">
+                                                {content.ai_content_insights.seo_recommendations.keyword_density_issues && (
+                                                    <span className={`aci-meta-badge ${content.ai_content_insights.seo_recommendations.keyword_density_issues === 'optimal' ? 'aci-meta--good' : 'aci-meta--warn'}`}>
+                                                        Keyword Density: {content.ai_content_insights.seo_recommendations.keyword_density_issues}
+                                                    </span>
+                                                )}
+                                                {content.ai_content_insights.seo_recommendations.missing_keywords?.length > 0 && (
+                                                    <div className="aci-seo-item">
+                                                        <span className="aci-seo-label">Missing Keywords:</span>
+                                                        <div className="nlp-chips" style={{ marginTop: '0.25rem' }}>
+                                                            {content.ai_content_insights.seo_recommendations.missing_keywords.map((k: string, i: number) => (
+                                                                <span key={i} className="nlp-phrase-chip">{k}</span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {content.ai_content_insights.seo_recommendations.content_gaps?.length > 0 && (
+                                                    <div className="aci-seo-item">
+                                                        <span className="aci-seo-label">Content Gaps:</span>
+                                                        <ul className="aci-list aci-list--bad">
+                                                            {content.ai_content_insights.seo_recommendations.content_gaps.map((g: string, i: number) => (
+                                                                <li key={i}>{g}</li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Improvement Suggestions */}
+                                    {content.ai_content_insights.improvement_suggestions?.length > 0 && (
+                                        <div className="nlp-block" style={{ marginTop: '0.75rem' }}>
+                                            <div className="nlp-card-title"><Compass size={15} /> Improvement Suggestions</div>
+                                            <table className="grade-table">
+                                                <thead><tr><th>Priority</th><th>Area</th><th className="th-desc">Suggestion</th></tr></thead>
+                                                <tbody>
+                                                    {content.ai_content_insights.improvement_suggestions.map((s: any, i: number) => (
+                                                        <tr key={i}>
+                                                            <td>
+                                                                <span className="grade-badge" style={{
+                                                                    backgroundColor: s.priority === 'high' ? 'rgba(239,68,68,0.12)' : s.priority === 'medium' ? 'rgba(249,115,22,0.12)' : 'rgba(245,158,11,0.12)',
+                                                                    color: s.priority === 'high' ? '#EF4444' : s.priority === 'medium' ? '#F97316' : '#F59E0B',
+                                                                    borderColor: s.priority === 'high' ? '#EF444440' : s.priority === 'medium' ? '#F9731640' : '#F59E0B40',
+                                                                }}>{s.priority}</span>
+                                                            </td>
+                                                            <td style={{ color: '#e0e0ea', fontWeight: 600, fontSize: '0.84rem', textTransform: 'capitalize' }}>{s.area?.replace(/_/g, ' ')}</td>
+                                                            <td className="grade-desc">{s.suggestion}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
+                                </>
+                            )}
                         </>
                     )}
 
@@ -402,45 +807,68 @@ export function AnalyzerDashboard() {
                     {(() => {
                         const modIssues = allIssues.filter((i: any) => i.module === activeModule);
                         const modFixes = allFixes.filter((f: any) => f.module === activeModule);
+                        const modColor = MODULE_COLORS[activeModule] || '#aee92b';
                         return (
                             <>
                                 {modIssues.length > 0 && (
-                                    <div className="issues-table-wrapper" style={{ marginTop: '1.5rem' }}>
-                                        <h3 className="module-sub-heading">{activeModule} Issues <span className="issue-count">{modIssues.length}</span></h3>
-                                        <table className="grade-table">
-                                            <thead><tr><th>Severity</th><th className="th-desc">Description</th></tr></thead>
-                                            <tbody>
-                                                {modIssues.map((issue: any, idx: number) => (
-                                                    <tr key={idx}>
-                                                        <td><SeverityBadge severity={issue.severity} /></td>
-                                                        <td className="grade-desc">{issue.description}</td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
+                                    <div className="issues-section">
+                                        <div className="issues-section-header">
+                                            <div className="issues-section-icon" style={{ backgroundColor: `${modColor}12`, color: modColor }}>
+                                                <AlertTriangle size={16} />
+                                            </div>
+                                            <h3 className="issues-section-title">{activeModule} Issues</h3>
+                                            <span className="issue-count">{modIssues.length}</span>
+                                        </div>
+                                        <div className="issues-table-wrapper">
+                                            <table className="grade-table issues-table">
+                                                <thead><tr><th>Severity</th><th>Description</th></tr></thead>
+                                                <tbody>
+                                                    {modIssues.map((issue: any, idx: number) => (
+                                                        <tr key={idx}>
+                                                            <td><SeverityBadge severity={issue.severity} /></td>
+                                                            <td className="grade-desc">
+                                                                {issue.ai && <span className="ai-tag">AI</span>}
+                                                                {issue.description}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     </div>
                                 )}
                                 {modFixes.length > 0 && (
-                                    <div className="issues-table-wrapper" style={{ marginTop: '1rem' }}>
-                                        <h3 className="module-sub-heading">Recommended Fixes</h3>
-                                        <table className="grade-table">
-                                            <thead><tr><th>Priority</th><th>Fix</th><th className="th-desc">Details</th></tr></thead>
-                                            <tbody>
-                                                {modFixes.map((fix: any, idx: number) => (
-                                                    <tr key={idx}>
-                                                        <td>
-                                                            <span className="grade-badge" style={{
-                                                                backgroundColor: fix.priority === 1 ? 'rgba(239,68,68,0.12)' : fix.priority === 2 ? 'rgba(249,115,22,0.12)' : 'rgba(245,158,11,0.12)',
-                                                                color: fix.priority === 1 ? '#EF4444' : fix.priority === 2 ? '#F97316' : '#F59E0B',
-                                                                borderColor: fix.priority === 1 ? '#EF444440' : fix.priority === 2 ? '#F9731640' : '#F59E0B40',
-                                                            }}>P{fix.priority}</span>
-                                                        </td>
-                                                        <td style={{ color: '#e0e0ea', fontWeight: 600, fontSize: '0.84rem' }}>{fix.title}</td>
-                                                        <td className="grade-desc">{fix.description}</td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
+                                    <div className="issues-section">
+                                        <div className="issues-section-header">
+                                            <div className="issues-section-icon" style={{ backgroundColor: 'rgba(16,185,129,0.1)', color: '#10B981' }}>
+                                                <CheckCircle size={16} />
+                                            </div>
+                                            <h3 className="issues-section-title">Recommended Fixes</h3>
+                                            <span className="fix-count">{modFixes.length}</span>
+                                        </div>
+                                        <div className="issues-table-wrapper">
+                                            <table className="grade-table fixes-table">
+                                                <thead><tr><th>Priority</th><th>Fix</th><th>Details</th></tr></thead>
+                                                <tbody>
+                                                    {modFixes.map((fix: any, idx: number) => (
+                                                        <tr key={idx}>
+                                                            <td>
+                                                                <span className="grade-badge" style={{
+                                                                    backgroundColor: fix.priority === 1 ? 'rgba(239,68,68,0.12)' : fix.priority === 2 ? 'rgba(249,115,22,0.12)' : 'rgba(245,158,11,0.12)',
+                                                                    color: fix.priority === 1 ? '#EF4444' : fix.priority === 2 ? '#F97316' : '#F59E0B',
+                                                                    borderColor: fix.priority === 1 ? '#EF444440' : fix.priority === 2 ? '#F9731640' : '#F59E0B40',
+                                                                }}>P{fix.priority}</span>
+                                                            </td>
+                                                            <td className="fix-title-cell">
+                                                                {fix.ai && <span className="ai-tag">AI</span>}
+                                                                {fix.title}
+                                                            </td>
+                                                            <td className="grade-desc">{fix.description}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     </div>
                                 )}
                             </>

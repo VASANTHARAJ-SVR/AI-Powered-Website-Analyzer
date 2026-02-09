@@ -15,6 +15,7 @@ export function LandingPage() {
     const [urlBottom, setUrlBottom] = useState('');
     const [loading, setLoading] = useState(false);
     const [loadingBottom, setLoadingBottom] = useState(false);
+    const [deviceMode, setDeviceMode] = useState<'desktop' | 'mobile'>('desktop');
     const navigate = useNavigate();
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -23,7 +24,7 @@ export function LandingPage() {
         setLoading(true);
         setTimeout(() => {
             setLoading(false);
-            navigate(`/analyze?url=${encodeURIComponent(url)}`);
+            navigate(`/analyze?url=${encodeURIComponent(url)}&mode=${deviceMode}`);
         }, 1500);
     };
 
@@ -33,7 +34,7 @@ export function LandingPage() {
         setLoadingBottom(true);
         setTimeout(() => {
             setLoadingBottom(false);
-            navigate(`/analyze?url=${encodeURIComponent(urlBottom)}`);
+            navigate(`/analyze?url=${encodeURIComponent(urlBottom)}&mode=${deviceMode}`);
         }, 1500);
     };
 
@@ -191,6 +192,24 @@ export function LandingPage() {
                             )}
                         </button>
                     </form>
+
+                    {/* Device Mode Toggle */}
+                    <div className="device-toggle">
+                        <button
+                            className={`device-toggle-btn ${deviceMode === 'desktop' ? 'active' : ''}`}
+                            onClick={() => setDeviceMode('desktop')}
+                            type="button"
+                        >
+                            <Globe size={14} /> Desktop
+                        </button>
+                        <button
+                            className={`device-toggle-btn ${deviceMode === 'mobile' ? 'active' : ''}`}
+                            onClick={() => setDeviceMode('mobile')}
+                            type="button"
+                        >
+                            <Smartphone size={14} /> Mobile
+                        </button>
+                    </div>
 
                     <p className="hero-trust">
                         <Shield size={14} />
@@ -843,10 +862,10 @@ function HowItWorks({ steps }: { steps: { num: string; icon: React.ElementType; 
                                         <span className="demo-score-num">86</span>
                                     </div>
                                     <div className="demo-results">
-                                        <div className="demo-result-row"><span>Performance</span><span style={{color:'#ff6b6b'}}>87</span></div>
-                                        <div className="demo-result-row"><span>SEO</span><span style={{color:'#4ecdc4'}}>92</span></div>
-                                        <div className="demo-result-row"><span>UX / Mobile</span><span style={{color:'#a78bfa'}}>78</span></div>
-                                        <div className="demo-result-row"><span>Content</span><span style={{color:'#f59e0b'}}>85</span></div>
+                                        <div className="demo-result-row"><span>Performance</span><span style={{ color: '#ff6b6b' }}>87</span></div>
+                                        <div className="demo-result-row"><span>SEO</span><span style={{ color: '#4ecdc4' }}>92</span></div>
+                                        <div className="demo-result-row"><span>UX / Mobile</span><span style={{ color: '#a78bfa' }}>78</span></div>
+                                        <div className="demo-result-row"><span>Content</span><span style={{ color: '#f59e0b' }}>85</span></div>
                                     </div>
                                     <CheckCircle2 size={16} className="demo-check" />
                                     <span className="demo-done-text">Analysis complete!</span>
