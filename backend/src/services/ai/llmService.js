@@ -36,8 +36,15 @@ class LLMService {
         const data = await response.json();
         return data.choices[0].message.content;
       } catch (error) {
-        console.error('[LLMService] Groq API request failed:', error);
+        if (error.message.includes('429') && this.currentRetry < 3) {
+          console.warn(`[LLMService] Rate limit hit. Retrying in ${Math.pow(2, this.currentRetry) * 1000}ms...`);
+          this.currentRetry = (this.currentRetry || 0) + 1;
+          await new Promise(r => setTimeout(r, Math.pow(2, this.currentRetry) * 1000));
+          return this.generateCompletion(prompt, systemPrompt);
+        }
+        console.error('[LLMService] Groq API request failed:', error.message);
       }
+      this.currentRetry = 0;
     }
 
     // 2. Try HuggingFace (Fallback/Alternative)

@@ -104,5 +104,11 @@ export const getJobStatus = async (jobId: string) => {
     return response.data;
 };
 
+// Competitor Analysis (3:1)
+export const startCompetitorAnalysis = async (userReportId: string) => {
+    const response = await api.post('/api/competitor/analyze-3-1', { userReportId });
+    return response.data;
+};
+
 export default api;
 

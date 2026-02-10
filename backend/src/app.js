@@ -24,6 +24,7 @@ app.use((req, res, next) => {
 app.use('/api', analyzeRoutes);
 app.use('/api', reportsRoutes);
 app.use('/api', chatRoutes);
+app.use('/api/competitor', require('./routes/competitor'));
 
 // Root endpoint
 app.get('/', (req, res) => {
