@@ -4,9 +4,10 @@ import { Footer } from './components/Footer';
 import { LandingPage } from './pages/LandingPage';
 import AnalyzerRedirect from './pages/AnalyzerRedirect';
 import { AnalyzerDashboard } from './pages/AnalyzerDashboard';
+import { ReportDashboard } from './pages/ReportDashboard';
 import './App.css';
 
-const FULLSCREEN_ROUTES = ['/analyze', '/dashboard'];
+const FULLSCREEN_ROUTES = ['/analyze', '/dashboard', '/report'];
 
 function AppLayout() {
   const location = useLocation();
@@ -17,6 +18,7 @@ function AppLayout() {
       <Routes>
         <Route path="/analyze" element={<AnalyzerRedirect />} />
         <Route path="/dashboard/:reportId" element={<AnalyzerDashboard />} />
+        <Route path="/report/:reportId" element={<ReportDashboard />} />
       </Routes>
     );
   }

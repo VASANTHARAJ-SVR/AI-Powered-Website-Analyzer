@@ -924,7 +924,7 @@ export function AnalyzerDashboard() {
                 <div className="view-report-cta" ref={viewBtnRef}>
                     <div className="view-report-glow" />
                     <p className="view-report-label">Want a printable summary of this audit?</p>
-                    <button className="view-report-btn" onClick={() => window.print()}>
+                    <button className="view-report-btn" onClick={() => navigate(`/report/${reportId}`)}>
                         <span>View Report</span>
                         <ArrowDown size={20} />
                     </button>
