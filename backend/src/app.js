@@ -58,24 +58,26 @@ app.use((req, res) => {
   });
 });
 
-// Start server
-const startServer = async () => {
-  try {
-    // Connect to MongoDB
-    await connectDB();
+// Start server only if run directly
+if (require.main === module) {
+  const startServer = async () => {
+    try {
+      // Connect to MongoDB
+      await connectDB();
 
-    // Start Express server
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
-      console.log(`📊 API: http://localhost:${PORT}/api`);
-      console.log(`💚 Health: http://localhost:${PORT}/api/health`);
-    });
-  } catch (error) {
-    console.error('❌ Failed to start server:', error);
-    process.exit(1);
-  }
-};
+      // Start Express server
+      app.listen(PORT, () => {
+        console.log(`🚀 Server running on http://localhost:${PORT}`);
+        console.log(`📊 API: http://localhost:${PORT}/api`);
+        console.log(`💚 Health: http://localhost:${PORT}/api/health`);
+      });
+    } catch (error) {
+      console.error('❌ Failed to start server:', error);
+      process.exit(1);
+    }
+  };
 
-startServer();
+  startServer();
+}
 
 module.exports = app;
