@@ -16,7 +16,7 @@ export function LandingPage() {
     const [urlBottom, setUrlBottom] = useState('');
     const [loading, setLoading] = useState(false);
     const [loadingBottom, setLoadingBottom] = useState(false);
-    const [deviceMode, setDeviceMode] = useState<'desktop' | 'mobile'>('desktop');
+    const [deviceMode] = useState<'desktop' | 'mobile'>('desktop');
     const navigate = useNavigate();
 
     const handleSubmit = (e: React.FormEvent) => {

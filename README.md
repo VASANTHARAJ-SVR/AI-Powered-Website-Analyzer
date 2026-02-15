@@ -74,31 +74,6 @@
     npm install
     ```
 
-<<<<<<< HEAD
-## ⚙️ Configuration
-
-Create a `.env` file in both the `backend` and `frontend` directories.
-
-**Backend (`backend/.env`):**
-```env
-PORT=3000
-MONGO_URI=your_mongodb_connection_string
-# AI Service Credentials
-GEMINI_API_KEY=your_gemini_key
-GROQ_API_KEY=your_groq_key
-# Other configurations implied by functionality
-```
-
-**Frontend (`frontend/.env`):**
-```env
-# API Configuration
-VITE_API_BASE_URL=http://localhost:3000
-```
-
-> **Note**: Specific model configurations and internal environment parameters should be set according to your deployment requirements.
-
-=======
->>>>>>> c6c3e8ce3c314a4644801bb4ab5b6c8e470f4cb6
 ## 🏃 Usage
 
 1.  **Start the Backend Server**
