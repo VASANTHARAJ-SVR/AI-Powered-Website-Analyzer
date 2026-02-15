@@ -74,6 +74,7 @@
     npm install
     ```
 
+<<<<<<< HEAD
 ## ⚙️ Configuration
 
 Create a `.env` file in both the `backend` and `frontend` directories.
@@ -96,6 +97,8 @@ VITE_API_BASE_URL=http://localhost:3000
 
 > **Note**: Specific model configurations and internal environment parameters should be set according to your deployment requirements.
 
+=======
+>>>>>>> c6c3e8ce3c314a4644801bb4ab5b6c8e470f4cb6
 ## 🏃 Usage
 
 1.  **Start the Backend Server**
