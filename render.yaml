@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: web-audit-ai-backend
+    env: node
+    plan: free # Change to starter if needed
+    region: singapore # Choose closest to you
+    rootDir: backend
+    buildCommand: npm install && npx playwright install-deps && npx playwright install chromium
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        fromValue: YOUR_MONGODB_URI_HERE
+      - key: GEMINI_API_KEY
+        fromValue: YOUR_GEMINI_API_KEY_HERE
+      - key: GROQ_API_KEY
+        fromValue: YOUR_GROQ_API_KEY_HERE
