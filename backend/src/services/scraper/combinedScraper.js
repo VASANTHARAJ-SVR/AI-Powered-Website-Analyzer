@@ -168,9 +168,11 @@ async function combinedScrape(url, opts = {}) {
 
   try {
     await page.goto(url, {
-      waitUntil: 'networkidle',
+      waitUntil: 'load',
       timeout: options.timeout
     });
+    // Wait for an extra 2 seconds for JS execution/settling
+    await page.waitForTimeout(2000);
   } catch (error) {
     navigationError = error.message;
     console.warn('Navigation warning:', error.message);
