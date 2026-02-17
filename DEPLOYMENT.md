@@ -2,13 +2,14 @@
 
 This project is configured for a split deployment.
 
-## 🚀 Backend Deployment (Render)
+## 🚀 Backend Deployment (Render - Docker)
 
 1. **Login to Render**: Go to [dashboard.render.com](https://dashboard.render.com/).
-2. **New Blueprint Instance**:
-   - Click **New +** -> **Blueprint**.
+2. **New Service**: 
+   - Click **New +** -> **Web Service**.
    - Connect your GitHub repository.
-   - Render will detect `render.yaml` automatically.
+   - **IMPORTANT**: Set the **Environment** to **Docker**.
+   - **Root Directory**: Set to `backend`.
 3. **Environment Variables**:
    Update the following in the Render Dashboard (or via the blueprint setup):
    - `MONGODB_URI`: Your MongoDB Atlas connection string.

@@ -1,15 +1,13 @@
 services:
   - type: web
     name: web-audit-ai-backend
-    env: node
-    plan: free # Change to starter if needed
-    region: singapore # Choose closest to you
+    env: docker # Changed from node to docker
+    plan: free
+    region: singapore
     rootDir: backend
-    buildCommand: npm install
-    startCommand: npm start
     envVars:
       - key: PORT
-        value: 10000
+        value: 3000
       - key: NODE_ENV
         value: production
       - key: MONGODB_URI
