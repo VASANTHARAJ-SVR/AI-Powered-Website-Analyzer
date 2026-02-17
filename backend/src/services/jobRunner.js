@@ -11,7 +11,7 @@ const contentModule = require('./modules/contentModule');
 const { smartAggregate } = require('../aggregator/smartAggregator');
 const { enhanceModulesWithAI } = require('./ai/moduleEnhancer');
 const Report = require('../models/Report');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID } = require('crypto');
 
 /**
  * Run complete analysis job
@@ -21,7 +21,7 @@ const { v4: uuidv4 } = require('uuid');
  * @returns {Promise<Object>} Complete analysis result
  */
 async function runAnalysisJob(url, options = {}, progressCallback = null) {
-  const jobId = options.jobId || uuidv4();
+  const jobId = options.jobId || randomUUID();
   const startTime = Date.now();
 
   const updateProgress = (status, progress, message) => {
