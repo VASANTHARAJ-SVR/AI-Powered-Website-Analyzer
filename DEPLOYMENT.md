@@ -11,14 +11,18 @@ This project is configured for a split deployment.
    - **IMPORTANT**: Set the **Environment** to **Docker**.
    - **Root Directory**: Set to `backend`.
 3. **Environment Variables**:
-   Update the following in the Render Dashboard (or via the blueprint setup):
+   Update the following in the Render Dashboard:
    - `MONGODB_URI`: Your MongoDB Atlas connection string.
    - `GEMINI_API_KEY`: Your Google AI API key.
    - `GROQ_API_KEY`: Your Groq Cloud API key.
    - `NODE_ENV`: `production`
 
-> [!IMPORTANT]
-> The build process installs Chromium automatically. If the scraper fails due to missing system libraries, you may need to switch to a **Docker Service** (Dockerfile) as Render's native environment has limited system permissions.
+4. **Whitelist Render on MongoDB Atlas**:
+   - Go to **Network Access** (under the Security header) in your MongoDB Atlas Dashboard.
+   - Click **Add IP Address**.
+   - Select **Allow Access From Anywhere** (adds `0.0.0.0/0`).
+   - Click **Confirm**.
+   - *Note: This is necessary because Render's IP addresses are dynamic and change with every deploy.*
 
 ---
 
