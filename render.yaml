@@ -5,7 +5,7 @@ services:
     plan: free # Change to starter if needed
     region: singapore # Choose closest to you
     rootDir: backend
-    buildCommand: npm install && npx playwright install-deps && npx playwright install chromium
+    buildCommand: npm install
     startCommand: npm start
     envVars:
       - key: PORT

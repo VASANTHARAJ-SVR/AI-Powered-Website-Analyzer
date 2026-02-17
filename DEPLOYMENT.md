@@ -17,7 +17,7 @@ This project is configured for a split deployment.
    - `NODE_ENV`: `production`
 
 > [!IMPORTANT]
-> The build command includes `playwright install`, which requires high enough build resources. If the build fails on the free tier, you might need the "Starter" plan.
+> The build process installs Chromium automatically. If the scraper fails due to missing system libraries, you may need to switch to a **Docker Service** (Dockerfile) as Render's native environment has limited system permissions.
 
 ---
 
